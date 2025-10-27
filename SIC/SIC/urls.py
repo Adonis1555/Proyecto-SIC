@@ -23,4 +23,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.transacciones, name='transacciones'),
     path('resultados/', views.resultados, name='resultados'),
+    path('comprobacion/', views.BalanceC, name='comprobacion'),
+    path('general/', views.BalanceG, name='general'),
+    path('costos/', views.costos, name='costos'),
+    path('capital/', views.EstadoCapital, name='capital'),
+    path('estados/', views.EstadoFinancieros, name='estados'),
+    path('mayor/', views.libroMayor, name='mayor'),
 ]
