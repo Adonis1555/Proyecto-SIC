@@ -1,7 +1,25 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from .models import Transaccion, Cuenta
+from .forms import TransaccionForm
 
 def transacciones(request):
-    return render(request, 'transacciones.html')
+    if request.method == 'POST':
+        form = TransaccionForm(request.POST)
+        if form.is_valid():
+            form.save()  # Guarda la transacción en la base de datos
+            return redirect('transacciones')  # Refresca la página
+    else:
+        form = TransaccionForm()
+
+    # Obtener todas las cuentas para el combobox
+    cuentas = Cuenta.objects.all().order_by('codigo')
+    transacciones_list = Transaccion.objects.all().order_by('-fecha')  # Lista todas las transacciones
+    
+    return render(request, 'transacciones.html', {
+        'form': form,
+        'cuentas': cuentas,
+        'transacciones': transacciones_list
+    })
 
 def resultados(request):
     return render(request, 'resultados.html')
