@@ -41,3 +41,15 @@ def libroMayor(request):
 
 def costos(request):
     return render(request, 'costos.html')
+
+def catalogo(request):
+    return render(request, 'catalogo.html')
+
+def cif(request):
+    return render(request, 'cif.html')
+
+def mod(request):
+    return render(request, 'mod.html')
+
+def estimacion(request):
+    return render(request, 'estimacion.html')

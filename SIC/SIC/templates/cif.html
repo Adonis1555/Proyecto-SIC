@@ -4,8 +4,8 @@
   {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Libro mayor</title>
-     <link rel="stylesheet" href="{% static 'BalanceC.css' %}">
+    <title>CIF</title>
+     <link rel="stylesheet" href="{% static 'cif.css' %}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
 </head>
 <body>
@@ -23,14 +23,13 @@
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
               aria-expanded="false">
-              Balance de Comprobacion
+             CIF
             </a>
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="{% url 'costos' %}">Costos</a></li>
               <li><a class="dropdown-item" href="{% url 'estados' %}">Estados financieros</a></li>
               <li><a class="dropdown-item" href="{% url 'transacciones' %}">Transacciones</a></li>
               <li><a class="dropdown-item" href="{% url 'mayor' %}">Libro Mayor</a></li>
-              <li><a class="dropdown-item" href="{% url 'catalogo' %}">Catalogo de cuentas</a></li>
             </ul>
           </li>
         </ul>
@@ -39,17 +38,9 @@
   </nav>
 </header>
     <body>
-        <h2 class="titulo-balanceC">Balance de comprobacion</h2>
-        <div class="select-container">
-             <select class="form-select form-select-sm" aria-label="Small select example">
-         <option selected>Seleccione un perido</option>
-         <option value="1">One</option>
-         <option value="2">Two</option>
-         <option value="3">Three</option>
-        </select>
-        </div>
+        <h2 class="titulo-cif">Costos indirectos de fabricacion</h2>
        
-        <div class="tabla-balanceC">
+        <div class="tabla-cif">
             <table class="table">
     <thead>
     <tr>
