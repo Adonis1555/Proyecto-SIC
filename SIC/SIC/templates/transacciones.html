@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    {% load static %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transacciones</title>        
+    <link rel="stylesheet" href="{% static 'transacciones.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+</head>
+<body>
+<header>
+<nav class="navbar navbar-expand-lg bg-body-tertiary"  data-bs-theme="dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">NovaSoft</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+<div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Transacciones
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{% url 'costos'%}">Costos</a></li>
+            <li><a class="dropdown-item" href="{% url 'estados' %}">Estados Financieros</a></li>
+            <li><a class="dropdown-item" href="{% url 'mayor' %}">Libro Mayor</a></li>
+          </ul>
+        </li>
+      </ul>
+      
+    </div>
+  </div>
+</nav>
+</header>
+<main class="container">
+<div class="ingreso-transaccion">
+    <h1 class="titulo">NovaSoft</h1>
+    <form class="formulario-transaccion">
+        <div class="lado-derecho">
+            <div class="subgrid-fecha">
+        <label for="fecha">Selecciona una fecha:</label>
+        <input type="date" id="fecha" name="fecha">
+        </div>
+        <div class="subgrid-descripcion">
+        <label for="descripcion">Descripcion:</label>
+        <input type="text" id="descripcion" name="descripcion" class="descripcion" placeholder="Descripcion de la transaccion">
+        </div>
+        </div>
+        <div class="lado-izquierdo">
+        <label for="cuenta">Cuenta</label>
+        <select class="form-select form-select-sm" aria-label="Small select example">
+         <option selected>Seleccione una cuenta</option>
+         <option value="1">One</option>
+         <option value="2">Two</option>
+         <option value="3">Three</option>
+        </select>
+        <div class="subgrid-monto">
+       <div class=subgrid1>
+        <label for="monto">Monto:</label>
+        <input type="number" id="monto" name="monto" placeholder="Monto de la transaccion">
+       </div>
+        <div class="subgrid2">
+            <div class="form-check">
+         <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
+         <label class="form-check-label" for="flexRadioDefault1">
+           Debe
+         </label>
+        </div>
+        <div class="form-check">
+         <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2" checked>
+         <label class="form-check-label" for="flexRadioDefault2">
+           Haber
+         </label>
+         </div>
+        </div>
+         </div>
+        <div class="botones-guardar-iva">
+        <div class="form-check form-switch IVA">
+        <label class="form-check-label" for="flexSwitchCheckDefault">Exento de IVA</label>
+        <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault">  
+        </div>
+        <button type="button" class="btn btn-outline-success">Guardar</button> 
+        </div>
+    </div>
+    </form>
+    
+</div>
+<div class="tabla-transacciones">
+
+          <table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Fecha</th>
+      <th scope="col">Codigo</th>
+       <th scope="col">Cuenta</th>
+      <th scope="col">Descripcion</th>
+      <th scope="col">Debe</th>
+      <th scope="col">Haber</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="row">1</th>
+      <td>Mark</td>
+      <td>Otto</td>
+      <td>@mdo</td>
+    </tr>
+    <tr>
+      <th scope="row">2</th>
+      <td>Jacob</td>
+      <td>Thornton</td>
+      <td>@fat</td>
+    </tr>
+    <tr>
+      <th scope="row">3</th>
+      <td colspan="2">Larry the Bird</td>
+      <td>@twitter</td>
+    </tr>
+  </tbody>
+</table>
+
+
+</div>
+</main>
+<footer>
+    <p class="texto-footer">NovaSoft &copy; 2025</p>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
+
