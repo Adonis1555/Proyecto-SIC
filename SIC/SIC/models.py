@@ -1,4 +1,5 @@
 from django.db import models
+from decimal import Decimal
 
 class Cuenta(models.Model):
     TIPOS_CUENTA = [
@@ -32,5 +33,16 @@ class Transaccion(models.Model):
     tipo = models.CharField(max_length=5, choices=TIPO_CHOICES)
     exento_iva = models.BooleanField(default=False)
 
+    #indica si está exento de iva o no
+    def save(self, *args, **kwargs):
+        # Si NO está exento, se suma el 13% de IVA
+        if not self.exento_iva:
+            iva = self.monto * Decimal('0.13')
+            self.monto = self.monto + iva
+        else:
+            self.monto = self.monto
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.fecha} - {self.cuenta.codigo} - {self.tipo} {self.monto}"
+        return f"{self.fecha} - {self.cuenta.codigo} - {self.tipo} {self.monto} "
