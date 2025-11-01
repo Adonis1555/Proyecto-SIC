@@ -29,6 +29,7 @@
               <li><a class="dropdown-item" href="{% url 'costos' %}">Costos</a></li>
               <li><a class="dropdown-item" href="{% url 'estados' %}">Estados financieros</a></li>
               <li><a class="dropdown-item" href="{% url 'transacciones' %}">Transacciones</a></li>
+              <li><a class="dropdown-item" href="{% url 'catalogo' %}">Catalogo de cuentas</a></li>
             </ul>
           </li>
         </ul>
@@ -51,30 +52,36 @@
             <table class="table">
   <thead>
     <tr>
-      <th scope="col">#</th>
-      <th scope="col">First</th>
-      <th scope="col">Last</th>
-      <th scope="col">Handle</th>
+      <th scope="col">Fecha</th>
+      <th scope="col">Codigo</th>
+      <th scope="col">Cuenta</th>
+      <th scope="col">Descripcion</th>
+      <th scope="col">Debe</th>
+      <th scope="col">Haber</th>
     </tr>
   </thead>
   <tbody>
-    <tr>
-      <th scope="row">1</th>
-      <td>Mark</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>Jacob</td>
-      <td>Thornton</td>
-      <td>@fat</td>
-    </tr>
-    <tr class="table-success">
-      <th scope="row">3</th>
-      <td colspan="2">Larry the Bird</td>
-      <td>@twitter</td>
-    </tr>
+     <tbody>
+          {% for t in transacciones %}
+          <tr>
+            <td>{{ t.fecha }}</td>
+            <td>{{ t.cuenta.codigo }}</td>
+            <td>{{ t.cuenta.nombre }}</td>
+            <td>{{ t.descripcion }}</td>
+            <td>{% if t.tipo == 'Debe' %}{{ t.monto }}{% endif %}</td>
+            <td>{% if t.tipo == 'Haber' %}{{ t.monto }}{% endif %}</td>
+          </tr>
+          
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center">No hay transacciones registradas</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tr class="table-success">
+            <td>Total</td>
+            
+          </tr>
   </tbody>
 </table>
         </div>
