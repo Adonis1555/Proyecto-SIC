@@ -110,7 +110,7 @@
             <td>{{ t.fecha }}</td>
             <td>{{ t.cuenta.codigo }}</td>
             <td>{{ t.cuenta.nombre }}</td>
-            <td>{{ t.descripcion }}</td>
+            <td class="columna-descripcion">{{t.descripcion}}</td>
             <td>{% if t.tipo == 'Debe' %}{{ t.monto }}{% endif %}</td>
             <td>{% if t.tipo == 'Haber' %}{{ t.monto }}{% endif %}</td>
           </tr>

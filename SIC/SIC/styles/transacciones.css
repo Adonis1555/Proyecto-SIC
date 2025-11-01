@@ -1,3 +1,23 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+
+main {
+  flex: 1; 
+  padding: 50px;
+}
+
+
 .formulario-transaccion{
     display:grid;
     grid-template-columns: repeat(2,1fr);
@@ -78,4 +98,9 @@ input:focus {
   border-color: #0d6efd;
   outline: 0;
   box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.columna-descripcion {
+  max-width: 300px;
+  overflow-wrap: break-word;
 }

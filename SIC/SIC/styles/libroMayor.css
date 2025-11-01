@@ -1,5 +1,23 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+
+main {
+  flex: 1; 
+  padding: 50px;
+}
+
 footer {
-  position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
@@ -16,9 +34,11 @@ footer p {
   margin-top: 15px;
 }
 
+
 .tabla-mayor{
-    width: 50%;
+    width: 70%;
     margin: auto;
+    border-collapse: collapse;
 }
 .titulo-mayor{
     text-align: center;
@@ -28,4 +48,9 @@ footer p {
     width: 50%;
     margin:auto;
     padding:20px;
+}
+
+.columna-descripcion {
+  max-width: 300px;
+  overflow-wrap: break-word;
 }
