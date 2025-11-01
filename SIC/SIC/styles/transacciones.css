@@ -9,13 +9,15 @@
     align-items: center;
     
 }
+main{
+  padding:50px;
+  margin-top: 70px;
+}
 
 .lado-derecho {
     display: grid;
     grid-template-rows: 1fr, 1fr;
 }
-
-
 
 .botones-guardar-iva {
     display: flex;
@@ -41,7 +43,6 @@
 }
 
 footer {
-  position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;

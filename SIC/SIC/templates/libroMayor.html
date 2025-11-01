@@ -10,7 +10,7 @@
 </head>
 <body>
     <header>
-  <nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
+  <nav class="navbar navbar-expand-lg bg-body-tertiary fixed-top" data-bs-theme="dark">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">NovaSoft</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
@@ -48,43 +48,46 @@
         </select>
         </div>
        
-        <div class="tabla-mayor">
-            <table class="table">
-  <thead>
-    <tr>
-      <th scope="col">Fecha</th>
-      <th scope="col">Codigo</th>
-      <th scope="col">Cuenta</th>
-      <th scope="col">Descripcion</th>
-      <th scope="col">Debe</th>
-      <th scope="col">Haber</th>
-    </tr>
-  </thead>
-  <tbody>
-     <tbody>
-          {% for t in transacciones %}
-          <tr>
-            <td>{{ t.fecha }}</td>
-            <td>{{ t.cuenta.codigo }}</td>
-            <td>{{ t.cuenta.nombre }}</td>
-            <td>{{ t.descripcion }}</td>
-            <td>{% if t.tipo == 'Debe' %}{{ t.monto }}{% endif %}</td>
-            <td>{% if t.tipo == 'Haber' %}{{ t.monto }}{% endif %}</td>
-          </tr>
-          
-          {% empty %}
-          <tr>
-            <td colspan="6" class="text-center">No hay transacciones registradas</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-        <tr class="table-success">
-            <td>Total</td>
-            
-          </tr>
-  </tbody>
-</table>
-        </div>
+   <div class="tabla-mayor">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Fecha</th>
+        <th scope="col">Codigo</th>
+        <th scope="col">Cuenta</th>
+        <th scope="col">Descripcion</th>
+        <th scope="col">Debe</th>
+        <th scope="col">Haber</th>
+      </tr>
+    </thead>
+    
+    <tbody>
+      {% for t in transacciones %}
+      <tr>
+        <td>{{ t.fecha }}</td>
+        <td>{{ t.cuenta.codigo }}</td>
+        <td>{{ t.cuenta.nombre }}</td>
+        <td>{{ t.descripcion }}</td>
+        <td>{% if t.tipo == 'Debe' %}{{ t.monto }}{% endif %}</td>
+        <td>{% if t.tipo == 'Haber' %}{{ t.monto }}{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center">No hay transacciones registradas</td>
+      </tr>
+      {% endfor %}
+      <tr class="table-success">
+        <td>Total:</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>{{total_debe}}</td>
+        <td>{{total_haber}}</td>
+      </tr>
+    </tbody>
+    
+  </table>
+</div>
         
     </body>
     <footer>

@@ -1,25 +1,24 @@
 from django.shortcuts import render, redirect
 from .models import Transaccion, Cuenta
 from .forms import TransaccionForm
+from django.db.models import Sum
 
 def transacciones(request):
     if request.method == 'POST':
         form = TransaccionForm(request.POST)
         if form.is_valid():
-            form.save()  # Guarda la transacción en la base de datos
-            return redirect('transacciones')  # Refresca la página
+            form.save() 
+            return redirect('transacciones')  
     else:
         form = TransaccionForm()
 
-    # Obtener todas las cuentas para el combobox
     cuentas = Cuenta.objects.all().order_by('codigo')
-    transacciones_list = Transaccion.objects.all().order_by('-fecha')  # Lista todas las transacciones
-    
-    return render(request, 'transacciones.html', {
-        'form': form,
-        'cuentas': cuentas,
-        'transacciones': transacciones_list
-    })
+    transacciones_list = Transaccion.objects.all().order_by('-fecha')  
+    resultado_debe = Transaccion.objects.filter(tipo='Debe').aggregate(Sum('monto'))
+    total_debe = resultado_debe.get('monto__sum') or 0.00
+    resultado_haber = Transaccion.objects.filter(tipo='Haber').aggregate(Sum('monto')) 
+    total_haber = resultado_haber.get('monto__sum') or 0.00
+    return render(request, 'transacciones.html', { 'form': form, 'cuentas': cuentas, 'transacciones': transacciones_list, 'total_debe':total_debe, 'total_haber':total_haber, })
 
 def resultados(request):
     return render(request, 'resultados.html')
@@ -39,12 +38,20 @@ def EstadoFinancieros(request):
 def libroMayor(request):
     cuentas = Cuenta.objects.all().order_by('codigo')
     transacciones_list = Transaccion.objects.all().order_by('-fecha') 
-    
-    return render(request, 'libroMayor.html', {
-        'cuentas': cuentas,
-        'transacciones': transacciones_list
-    })
+    resultado_debe = Transaccion.objects.filter(tipo='Debe').aggregate(Sum('monto'))
+    total_debe = resultado_debe.get('monto__sum') or 0.00
 
+    resultado_haber = Transaccion.objects.filter(tipo='Haber').aggregate(Sum('monto'))
+    total_haber = resultado_haber.get('monto__sum') or 0.00
+    
+    context = {
+        'cuentas': cuentas,
+        'transacciones': transacciones_list,
+        'total_debe': total_debe,     
+        'total_haber': total_haber,   
+    }
+    
+    return render(request, 'libroMayor.html', context)
 def costos(request):
     return render(request, 'costos.html')
 
