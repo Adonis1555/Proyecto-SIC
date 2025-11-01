@@ -71,16 +71,17 @@
             <td>{% if t.tipo == 'Debe' %}{{ t.monto }}{% endif %}</td>
             <td>{% if t.tipo == 'Haber' %}{{ t.monto }}{% endif %}</td>
           </tr>
-          <tr class="table-success">
-            <td>Total</td>
-            
-          </tr>
+          
           {% empty %}
           <tr>
             <td colspan="6" class="text-center">No hay transacciones registradas</td>
           </tr>
           {% endfor %}
         </tbody>
+        <tr class="table-success">
+            <td>Total</td>
+            
+          </tr>
   </tbody>
 </table>
         </div>
