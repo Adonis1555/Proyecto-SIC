@@ -37,7 +37,25 @@ def EstadoFinancieros(request):
     return render(request, 'EstadosFinancieros.html')
 
 def libroMayor(request):
-    return render(request, 'libroMayor.html')
+    cuentas = Cuenta.objects.all().order_by('codigo')
+    transacciones_list = Transaccion.objects.all().order_by('-fecha') 
+    
+    return render(request, 'libroMayor.html', {
+        'cuentas': cuentas,
+        'transacciones': transacciones_list
+    })
 
 def costos(request):
     return render(request, 'costos.html')
+
+def catalogo(request):
+    return render(request, 'catalogo.html')
+
+def cif(request):
+    return render(request, 'cif.html')
+
+def mod(request):
+    return render(request, 'mod.html')
+
+def estimacion(request):
+    return render(request, 'estimacion.html')

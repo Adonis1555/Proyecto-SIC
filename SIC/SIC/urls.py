@@ -29,4 +29,8 @@ urlpatterns = [
     path('capital/', views.EstadoCapital, name='capital'),
     path('estados/', views.EstadoFinancieros, name='estados'),
     path('mayor/', views.libroMayor, name='mayor'),
+    path('catalogo/', views.catalogo, name='catalogo'),
+    path('mod/', views.mod, name='mod'),
+    path('cif/', views.cif, name='cif'),
+    path('estimacion/', views.estimacion, name='estimacion'),
 ]

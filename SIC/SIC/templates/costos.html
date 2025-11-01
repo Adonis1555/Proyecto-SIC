@@ -26,6 +26,7 @@
             <li><a class="dropdown-item" href="{% url 'estados' %}">Estados financieros</a></li>
             <li><a class="dropdown-item" href="{% url 'transacciones' %}">Transacciones</a></li>
             <li><a class="dropdown-item" href="{% url 'mayor' %}">Libro Mayor</a></li>
+            <li><a class="dropdown-item" href="{% url 'catalogo' %}">Catalogo de cuentas</a></li>
           </ul>
         </li>
       </ul>
@@ -37,9 +38,9 @@
 <main>
 <h2 class="titulo-costos">Gestionar Costos</h2>
 <div class="button-container">
-  <button type="button" class="btn btn-outline-dark">CIF</button>
-  <button type="button" class="btn btn-outline-dark">Mano de obra directa</button>
-  <button type="button" class="btn btn-outline-dark">Estimacion de proyecto</button>
+  <button type="button" class="btn btn-outline-dark" onclick="window.location.href='{% url 'cif' %}'">CIF</button>
+  <button type="button" class="btn btn-outline-dark" onclick="window.location.href='{% url 'mod' %}'">Mano de obra directa</button>
+  <button type="button" class="btn btn-outline-dark" onclick="window.location.href='{% url 'estimacion' %}'">Estimacion de proyecto</button>
   
 </main>
 </div>
