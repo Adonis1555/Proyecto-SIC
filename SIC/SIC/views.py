@@ -8,18 +8,26 @@ from datetime import date, timedelta
 from calendar import monthrange
 
 def transacciones(request):
+    periodo_abierto = Periodo.objects.filter(cerrado=False).order_by('-fecha_inicio').first()
+    
+    if periodo_abierto:
+        primer_dia = periodo_abierto.fecha_inicio
+        ultimo_dia = periodo_abierto.fecha_fin
+    else:
+        hoy = timezone.now().date()
+        primer_dia = hoy.replace(day=1)
+        ultimo_dia = hoy.replace(day=monthrange(hoy.year, hoy.month)[1])
     if request.method == 'POST':
-        form = TransaccionForm(request.POST)
+        form = TransaccionForm(request.POST, primer_dia=primer_dia, ultimo_dia=ultimo_dia)
         if form.is_valid():
             form.save() 
             return redirect('transacciones')  
     else:
-        form = TransaccionForm()
+        form = TransaccionForm(primer_dia=primer_dia, ultimo_dia=ultimo_dia)
     
     cuentas = Cuenta.objects.all().order_by('codigo')
     transacciones_list = Transaccion.objects.filter(periodo__isnull=True).order_by('-fecha')  
 
-    # Totales solo del periodo en curso
     resultado_debe = transacciones_list.filter(tipo='Debe').aggregate(Sum('monto'))
     total_debe = resultado_debe.get('monto__sum') or Decimal('0.00')
 
@@ -31,16 +39,16 @@ def transacciones(request):
         'transacciones': transacciones_list, 
         'total_debe': total_debe, 
         'total_haber': total_haber,
+        'primer_dia': primer_dia,
+        'ultimo_dia': ultimo_dia
     })
 
 def resultados(request):
     return render(request, 'resultados.html')
 
 def BalanceC(request):
-    # Solo periodos cerrados
     periodos = Periodo.objects.filter(cerrado=True).order_by('-fecha_inicio')
 
-    # Tomar periodo seleccionado desde GET
     periodo_id = request.GET.get('periodo')
     if periodo_id:
         try:
@@ -50,10 +58,8 @@ def BalanceC(request):
     else:
         periodo_seleccionado = periodos.first()
 
-    # Obtener los cierres de ese periodo
     cierres = BalanceComprobacion.objects.filter(periodo=periodo_seleccionado).order_by('cuenta__codigo') if periodo_seleccionado else []
 
-    # Totales de Debe y Haber
     totales = cierres.aggregate(
         total_debe=Sum('debe'),
         total_haber=Sum('haber')
@@ -76,22 +82,18 @@ def EstadoFinancieros(request):
     return render(request, 'EstadosFinancieros.html')
 
 def libroMayor(request):
-    periodo_id = request.GET.get('periodo')  # Obtenemos el periodo del GET
+    periodo_id = request.GET.get('periodo') 
     if periodo_id:
-        # Mostrar transacciones de un periodo cerrado específico
         transacciones_list = Transaccion.objects.filter(periodo_id=periodo_id).order_by('-fecha')
     else:
-        # Mostrar transacciones en curso (sin periodo asignado)
+        
         transacciones_list = Transaccion.objects.filter(periodo__isnull=True).order_by('-fecha')
 
-    # Totales
     total_debe = transacciones_list.filter(tipo='Debe').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
     total_haber = transacciones_list.filter(tipo='Haber').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
 
-    # Periodos cerrados para el select
-    periodos = Periodo.objects.filter(cerrado=True).order_by('-fecha_inicio')
 
-    # Periodo seleccionado
+    periodos = Periodo.objects.filter(cerrado=True).order_by('-fecha_inicio')
     periodo_seleccionado = None
     if periodo_id:
         try:
@@ -131,10 +133,9 @@ def estimacion(request):
     return render(request, 'estimacion.html')
 
 def cerrar_periodo(periodo):
-    # Seleccionar todas las transacciones sin periodo asignado (periodo abierto)
+
     transacciones = Transaccion.objects.filter(periodo__isnull=True)
     
-    # Agrupar por cuenta y tipo
     cuentas_resumen = {}
     for t in transacciones:
         key = t.cuenta.id
@@ -145,7 +146,6 @@ def cerrar_periodo(periodo):
         else:
             cuentas_resumen[key]['haber'] += t.monto
     
-    # Asignar periodo a las transacciones
     transacciones.update(periodo=periodo)
     
     return cuentas_resumen
@@ -162,11 +162,9 @@ def siguiente_mes(fecha_actual):
 
 def cerrar_periodo_view(request):
     if request.method == "POST":
-        # 1️⃣ Buscar el periodo abierto actual
         periodo_abierto = Periodo.objects.filter(cerrado=False).order_by('-fecha_inicio').first()
 
         if periodo_abierto:
-            # Cerrar el periodo abierto
             fecha_base = periodo_abierto.fecha_inicio
             ultimo_dia = monthrange(fecha_base.year, fecha_base.month)[1]
             periodo_abierto.fecha_fin = fecha_base.replace(day=ultimo_dia)
@@ -175,7 +173,7 @@ def cerrar_periodo_view(request):
             periodo_abierto.save()
             periodo_cerrado = periodo_abierto
         else:
-            # No hay periodo abierto: crear el primer periodo cerrado
+ 
             fecha_base = timezone.now().date()
             ultimo_dia = monthrange(fecha_base.year, fecha_base.month)[1]
             periodo_cerrado = Periodo.objects.create(
@@ -185,29 +183,26 @@ def cerrar_periodo_view(request):
                 cerrado=True
             )
 
-        # 2️⃣ Guardar totales en Balance de Comprobación
+  
         for cuenta in Cuenta.objects.all():
-            # Solo transacciones del periodo en curso (sin periodo asignado)
+       
             trans_cuenta = Transaccion.objects.filter(cuenta=cuenta, periodo__isnull=True)
             total_debe = trans_cuenta.filter(tipo='Debe').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
             total_haber = trans_cuenta.filter(tipo='Haber').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
-
-            # Guardar en BalanceComprobacion
+            
             BalanceComprobacion.objects.create(
                 periodo=periodo_cerrado,
                 cuenta=cuenta,
                 debe=total_debe,
                 haber=total_haber
             )
-
-            # Resetear saldo de la cuenta
             cuenta.saldo = Decimal('0.00')
             cuenta.save()
             
             trans_cuenta.update(periodo=periodo_cerrado)
-        # 3️⃣ Borrar transacciones del libro mayor
+     
         Transaccion.objects.filter(periodo__isnull=True).update(periodo=periodo_cerrado)
-        # 4️⃣ Crear nuevo periodo abierto (primer día del siguiente mes)
+      
         primer_dia_siguiente_mes = siguiente_mes(periodo_cerrado.fecha_inicio)
         ultimo_dia_siguiente_mes = monthrange(primer_dia_siguiente_mes.year, primer_dia_siguiente_mes.month)[1]
 
@@ -217,8 +212,6 @@ def cerrar_periodo_view(request):
             fecha_fin=primer_dia_siguiente_mes.replace(day=ultimo_dia_siguiente_mes),
             cerrado=False
         )
-
-        # 5️⃣ Renderizar resumen del cierre y lista de periodos
         periodos = Periodo.objects.all().order_by('-fecha_inicio')
         return render(request, 'EstadosFinancieros.html', {
             'periodo': periodo_cerrado,
@@ -227,7 +220,6 @@ def cerrar_periodo_view(request):
         })
 
     else:
-        # GET no permite cerrar periodos, solo mostrar periodos
         periodos = Periodo.objects.all().order_by('-fecha_inicio')
         return render(request, 'EstadosFinancieros.html', {
             'periodos': periodos

@@ -25,3 +25,13 @@ class TransaccionForm(forms.ModelForm):
             #'tipo': forms.RadioSelect(choices=[('Debe','Debe'),('Haber','Haber')]),
             'exento_iva': forms.CheckboxInput(attrs={'class':'form-check-input'}),
         }
+    def __init__(self, *args, **kwargs):
+        # Recibir rango de fechas del periodo abierto
+        primer_dia = kwargs.pop('primer_dia', None)
+        ultimo_dia = kwargs.pop('ultimo_dia', None)
+        super().__init__(*args, **kwargs)
+
+        if primer_dia:
+            self.fields['fecha'].widget.attrs['min'] = primer_dia
+        if ultimo_dia:
+            self.fields['fecha'].widget.attrs['max'] = ultimo_dia
