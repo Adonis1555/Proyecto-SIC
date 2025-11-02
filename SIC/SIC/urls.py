@@ -33,4 +33,5 @@ urlpatterns = [
     path('mod/', views.mod, name='mod'),
     path('cif/', views.cif, name='cif'),
     path('estimacion/', views.estimacion, name='estimacion'),
+    path('cerrar_periodo/', views.cerrar_periodo_view, name='cerrar_periodo'),
 ]

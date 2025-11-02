@@ -40,14 +40,23 @@
     <body>
       <main>
         <h2 class="titulo-mayor">Libro Mayor</h2>
-        <div class="select-container">
-             <select class="form-select form-select-sm" aria-label="Small select example">
-         <option selected>Seleccione un perido</option>
-         <option value="1">One</option>
-         <option value="2">Two</option>
-         <option value="3">Three</option>
-        </select>
+        <div class="container">
+          <form method="get" action="" class="select-container">
+              <select name="periodo" class="form-select" onchange="this.form.submit()">
+                  <option value="" {% if not periodo_seleccionado %}selected{% endif %}>Periodo en curso</option>
+                  {% for p in periodos %}
+                      <option value="{{ p.id }}" {% if periodo_seleccionado and periodo_seleccionado.id == p.id %}selected{% endif %}>
+                          {{ p.nombre }}
+                      </option>
+                  {% endfor %}
+              </select>
+          </form>
+          <form method="POST" action="{% url 'cerrar_periodo' %}" class="cierre-periodo">
+              {% csrf_token %}
+              <button type="submit" class="cierre-button">Cierre contable</button>
+          </form>
         </div>
+       
        
    <div class="tabla-mayor">
   <table class="table">
@@ -89,7 +98,7 @@
     
   </table>
 </div>
-        
+    
       </main>
         
     </body>

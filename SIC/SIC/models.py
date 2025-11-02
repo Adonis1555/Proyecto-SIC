@@ -31,6 +31,26 @@ class Transaccion(models.Model):
     ]
     tipo = models.CharField(max_length=5, choices=TIPO_CHOICES)
     exento_iva = models.BooleanField(default=False)
+    periodo = models.ForeignKey('Periodo', null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return f"{self.fecha} - {self.cuenta.codigo} - {self.tipo} {self.monto}"
+
+class Periodo(models.Model):
+    nombre = models.CharField(max_length=50)  # Ej: "Enero 2025"
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField(null=True, blank=True)
+    cerrado = models.BooleanField(default=False)
+    
+
+    def __str__(self):
+        return self.nombre
+
+class BalanceComprobacion(models.Model):
+    periodo = models.ForeignKey('Periodo', on_delete=models.CASCADE)
+    cuenta = models.ForeignKey('Cuenta', on_delete=models.CASCADE)
+    debe = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    haber = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"{self.cuenta.nombre} - {self.periodo.nombre}"
