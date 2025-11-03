@@ -15,6 +15,7 @@ class Cuenta(models.Model):
     debe = models.DecimalField(max_digits=10, decimal_places=2)
     haber = models.DecimalField(max_digits=10, decimal_places=2)
     cuenta_padre = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
+    automatica = models.BooleanField(default=False)
     
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"

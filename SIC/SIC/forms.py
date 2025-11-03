@@ -30,6 +30,7 @@ class TransaccionForm(forms.ModelForm):
         primer_dia = kwargs.pop('primer_dia', None)
         ultimo_dia = kwargs.pop('ultimo_dia', None)
         super().__init__(*args, **kwargs)
+        self.fields['cuenta'].queryset = Cuenta.objects.filter(automatica=False)
 
         if primer_dia:
             self.fields['fecha'].widget.attrs['min'] = primer_dia

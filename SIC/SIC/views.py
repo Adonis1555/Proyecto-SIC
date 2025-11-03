@@ -20,13 +20,53 @@ def transacciones(request):
     if request.method == 'POST':
         form = TransaccionForm(request.POST, primer_dia=primer_dia, ultimo_dia=ultimo_dia)
         if form.is_valid():
-            form.save() 
+            transaccion = form.save(commit=False)
+            transaccion.periodo = periodo_abierto
+            transaccion.save()
+            print("exento_iva:", transaccion.exento_iva)
+            print("tipo_cuenta:", transaccion.cuenta.tipo)
+            print(
+                "exento_iva:", transaccion.exento_iva,
+                "tipo_cuenta:", transaccion.cuenta.tipo,
+                "cuenta_id:", transaccion.cuenta.id
+            )
+            if (
+                not transaccion.exento_iva and 
+                transaccion.cuenta.tipo in ['ACT', 'PAS']
+            ):
+              iva_rate = Decimal('0.13')  # 13% IVA, ajusta según país
+              iva_monto = transaccion.monto * iva_rate
+              transaccion.monto = iva_monto + transaccion.monto
+              transaccion.save(update_fields=['monto']) 
+     
+              if transaccion.tipo == 'Haber':
+                  # Transacción de Debito → IVA va al Debito
+                  iva_cuenta = Cuenta.objects.get(codigo='2110')  # IVA débito
+                  print("iva",iva_cuenta)
+                  Transaccion.objects.create(
+                      fecha=transaccion.fecha,
+                      cuenta=iva_cuenta,
+                      descripcion="Aplicando IVA",
+                      monto=iva_monto,
+                      tipo='Debe',
+                      periodo=periodo_abierto,
+                  )
+              else:
+               iva_cuenta = Cuenta.objects.get(codigo='1108')  
+               Transaccion.objects.create(
+                   fecha=transaccion.fecha,
+                   cuenta=iva_cuenta,
+                   descripcion="Aplicando IVA",
+                   monto=iva_monto,
+                   tipo='Haber',
+                   periodo=periodo_abierto,
+               )
             return redirect('transacciones')  
     else:
         form = TransaccionForm(primer_dia=primer_dia, ultimo_dia=ultimo_dia)
     
-    cuentas = Cuenta.objects.all().order_by('codigo')
-    transacciones_list = Transaccion.objects.filter(periodo__isnull=True).order_by('-fecha')  
+    cuentas = Cuenta.objects.filter(automatica=False).order_by('codigo')
+    transacciones_list = Transaccion.objects.filter(periodo=periodo_abierto).order_by('-fecha')
 
     resultado_debe = transacciones_list.filter(tipo='Debe').aggregate(Sum('monto'))
     total_debe = resultado_debe.get('monto__sum') or Decimal('0.00')
@@ -49,6 +89,7 @@ def resultados(request):
 def BalanceC(request):
     periodos = Periodo.objects.filter(cerrado=True).order_by('-fecha_inicio')
 
+    # Obtener el periodo seleccionado desde GET
     periodo_id = request.GET.get('periodo')
     if periodo_id:
         try:
@@ -58,12 +99,17 @@ def BalanceC(request):
     else:
         periodo_seleccionado = periodos.first()
 
+    # Obtener los registros de BalanceComprobacion solo para el periodo seleccionado
     cierres = BalanceComprobacion.objects.filter(periodo=periodo_seleccionado).order_by('cuenta__codigo') if periodo_seleccionado else []
 
-    totales = cierres.aggregate(
-        total_debe=Sum('debe'),
-        total_haber=Sum('haber')
-    ) if cierres else {'total_debe': 0, 'total_haber': 0}
+    # Calcular totales solo si hay cierres
+    if cierres:
+        totales = cierres.aggregate(
+            total_debe=Sum('debe'),
+            total_haber=Sum('haber')
+        )
+    else:
+        totales = {'total_debe': 0, 'total_haber': 0}
 
     return render(request, 'BalanceC.html', {
         'periodos': periodos,
@@ -82,13 +128,15 @@ def EstadoFinancieros(request):
     return render(request, 'EstadosFinancieros.html')
 
 def libroMayor(request):
-    periodo_id = request.GET.get('periodo') 
+    periodo_id = request.GET.get('periodo')
+
+    periodo_abierto = Periodo.objects.filter(cerrado=False).order_by('-fecha_inicio').first()
     if periodo_id:
+        # Mostrar transacciones de un periodo cerrado
         transacciones_list = Transaccion.objects.filter(periodo_id=periodo_id).order_by('-fecha')
     else:
-        
-        transacciones_list = Transaccion.objects.filter(periodo__isnull=True).order_by('-fecha')
-
+        # Mostrar transacciones del periodo en curso (abierto)
+        transacciones_list = Transaccion.objects.filter(periodo=periodo_abierto).order_by('-fecha') if periodo_abierto else []
     total_debe = transacciones_list.filter(tipo='Debe').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
     total_haber = transacciones_list.filter(tipo='Haber').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
 
@@ -186,7 +234,7 @@ def cerrar_periodo_view(request):
   
         for cuenta in Cuenta.objects.all():
        
-            trans_cuenta = Transaccion.objects.filter(cuenta=cuenta, periodo__isnull=True)
+            trans_cuenta = Transaccion.objects.filter(cuenta=cuenta, periodo=periodo_abierto)
             total_debe = trans_cuenta.filter(tipo='Debe').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
             total_haber = trans_cuenta.filter(tipo='Haber').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
             
