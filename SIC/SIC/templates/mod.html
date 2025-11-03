@@ -2,28 +2,33 @@
 <html lang="es">
 <head>
   {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mano de obra directa</title>
-    <link rel="stylesheet" href="{% static 'libroMayor.css' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mano de obra directa</title>
+  <!-- Mantengo tu css original -->
+  <link rel="stylesheet" href="{% static 'libroMayor.css' %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <style>
+    .mt-nav{ margin-top:80px; }
+    .mono{ font-variant-numeric: tabular-nums; font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; }
+    .table tfoot th, .table tfoot td{ font-weight:700; }
+    .nowrap{ white-space:nowrap; }
+  </style>
 </head>
 <body>
-    <header>
+<header>
   <nav class="navbar navbar-expand-lg bg-body-tertiary fixed-top" data-bs-theme="dark">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">NovaSoft</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
-        aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup">
         <span class="navbar-toggler-icon"></span>
       </button>
 
       <div class="collapse navbar-collapse" id="navbarNavAltMarkup">  
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-              aria-expanded="false">
-             Mano de obra directa
+            <a class="nav-link dropdown-toggle active" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Mano de obra directa
             </a>
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="{% url 'costos' %}">Costos</a></li>
@@ -37,53 +42,251 @@
     </div>
   </nav>
 </header>
-    <body>
-        <h2 class="titulo-mayor">Libro Mayor</h2>
-        <div class="select-container">
-             <select class="form-select form-select-sm" aria-label="Small select example">
-         <option selected>Seleccione un perido</option>
-         <option value="1">One</option>
-         <option value="2">Two</option>
-         <option value="3">Three</option>
-        </select>
+
+<main class="container mt-nav pb-5">
+
+  <h2 class="text-center fw-bold mb-3">Mano de obra directa</h2>
+
+  <!-- Alta de empleado MOD -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Agregar colaborador</h5>
+        <span class="badge bg-secondary">
+          {% with c=empleados|length|default:0 %}{{ c }}{% endwith %} / 30
+        </span>
+      </div>
+
+      <form method="post" class="row g-3" id="formMOD"
+            data-count="{% with c=empleados|length|default:0 %}{{ c }}{% endwith %}">
+        {% csrf_token %}
+        <div class="col-md-6">
+          <label class="form-label">Nombre completo</label>
+          <input class="form-control" type="text" name="nombre" placeholder="Ej.: Juan Pérez" required>
         </div>
-       
-        <div class="tabla-mayor">
-            <table class="table">
-  <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">First</th>
-      <th scope="col">Last</th>
-      <th scope="col">Handle</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row">1</th>
-      <td>Mark</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>Jacob</td>
-      <td>Thornton</td>
-      <td>@fat</td>
-    </tr>
-    <tr class="table-success">
-      <th scope="row">3</th>
-      <td colspan="2">Larry the Bird</td>
-      <td>@twitter</td>
-    </tr>
-  </tbody>
-</table>
+        <div class="col-md-4">
+          <label class="form-label">Cargo (MOD)</label>
+          <select class="form-select" name="cargo" required>
+            <option value="" selected disabled>Selecciona…</option>
+            <option>Líder técnico</option>
+            <option>Desarrollador senior</option>
+            <option>Desarrollador junior</option>
+            <option>Tester QA</option>
+            <option>Admin. de servidores/BD</option>
+            <option>Diseñador UX/UI</option>
+            <option>Especialista en seguridad</option>
+            <option>Analista funcional</option>
+          </select>
         </div>
-        
-    </body>
-    <footer>
-         <p class="texto-footer">NovaSoft &copy; 2025</p>
-    </footer>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <div class="col-md-2">
+          <label class="form-label">Salario nominal (USD)</label>
+          <input class="form-control" type="number" step="0.01" min="0" name="salario" placeholder="0.00" required>
+        </div>
+
+        <div class="col-12 d-flex justify-content-end gap-2">
+          <button class="btn btn-primary" type="submit" id="btnGuardar">Guardar empleado</button>
+          <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
+        </div>
+      </form>
+
+      <small class="text-muted d-block mt-2">
+        * Se admiten únicamente cargos que participan directamente en la producción del software  
+      </small>
+    </div>
+  </section>
+
+  <!-- Listado con cálculo de costo mensual real por empleado -->
+  <section class="card shadow-sm">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Listado de MOD</h5>
+        <div class="text-end">
+          <div class="small text-muted">Total empleados</div>
+          <div class="h6 mb-0">{% with c=empleados|length|default:0 %}{{ c }}{% endwith %}</div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle table-striped">
+          <thead class="table-light">
+            <tr>
+              <th class="nowrap">Código</th>
+              <th>Nombre</th>
+              <th>Cargo</th>
+              <th class="text-end nowrap">Salario</th>
+              <th class="text-end nowrap">AFP</th>
+              <th class="text-end nowrap">ISSS</th>
+              <th class="text-end nowrap">Séptimo</th>
+              <th class="text-end nowrap">Aguinaldo</th>
+              <th class="text-end nowrap">Vacaciones</th>
+              <th class="text-end nowrap">INCAF</th>
+              <th class="text-end nowrap">Costo mensual real</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="modBody">
+            {% if empleados and empleados|length > 0 %}
+              {% for e in empleados %}
+              <tr data-salario="{{ e.salario|floatformat:2 }}">
+                <td class="mono">{{ e.codigo }}</td>
+                <td>{{ e.nombre }}</td>
+                <td>{{ e.cargo }}</td>
+                <td class="text-end mono s-salario"></td>
+                <td class="text-end mono s-afp"></td>
+                <td class="text-end mono s-isss"></td>
+                <td class="text-end mono s-septimo"></td>
+                <td class="text-end mono s-aguinaldo"></td>
+                <td class="text-end mono s-vac"></td>
+                <td class="text-end mono s-incaf"></td>
+                <td class="text-end mono s-total fw-semibold"></td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalEdit{{ e.id }}">Editar</button>
+                  <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalDel{{ e.id }}">Eliminar</button>
+                </td>
+              </tr>
+
+              <!-- Modal EDIT -->
+              <div class="modal fade" id="modalEdit{{ e.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                  <div class="modal-content">
+                    <form method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="update">
+                      <input type="hidden" name="id" value="{{ e.id }}">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Editar empleado</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <label class="form-label">Nombre completo</label>
+                            <input class="form-control" name="nombre" value="{{ e.nombre }}" required>
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label">Cargo</label>
+                            <input class="form-control" name="cargo" value="{{ e.cargo }}" required>
+                          </div>
+                          <div class="col-md-2">
+                            <label class="form-label">Salario (USD)</label>
+                            <input class="form-control" type="number" step="0.01" min="0" name="salario" value="{{ e.salario }}">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button class="btn btn-primary" type="submit">Guardar cambios</button>
+                        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Modal DELETE -->
+              <div class="modal fade" id="modalDel{{ e.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content">
+                    <form method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete">
+                      <input type="hidden" name="id" value="{{ e.id }}">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Eliminar empleado</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                      </div>
+                      <div class="modal-body">
+                        <p>¿Eliminar a <strong>{{ e.nombre }}</strong> ({{ e.cargo }})?</p>
+                        <small class="text-muted">Esta acción es permanente.</small>
+                      </div>
+                      <div class="modal-footer">
+                        <button class="btn btn-danger" type="submit">Eliminar</button>
+                        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="12" class="text-center text-muted">No hay empleados registrados.</td></tr>
+            {% endif %}
+          </tbody>
+          <tfoot>
+            <tr class="table-light">
+              <th colspan="10" class="text-end">TOTAL costo mensual real</th>
+              <th class="text-end mono" id="totalGeneral">$0.00</th>
+              <th></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="small text-muted mt-2">
+        Reglas: AFP = 7.75% del salario; ISSS = 7.5% sobre base topada a $1,000;  
+        Séptimo = (salario/30) × 4.3333; Aguinaldo = 4.1% del salario;  
+        Vacaciones = (salario/30) × 1.25; INCAF = 1% del salario.
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p class="texto-footer">NovaSoft &copy; 2025</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Limitar a 30 empleados en el botón de guardar (solo UX)
+  (function(){
+    const form = document.getElementById('formMOD');
+    if(!form) return;
+    const count = Number(form.dataset.count || 0);
+    const btn = document.getElementById('btnGuardar');
+    if(count >= 30 && btn){
+      btn.disabled = true;
+      btn.title = 'Límite de 30 personas alcanzado';
+    }
+  })();
+
+  // Cálculo por fila en el listado (formato en-US)
+  (function(){
+    const fmt = v => (isNaN(v)? 0 : v).toLocaleString('en-US',{style:'currency', currency:'USD'});
+
+    const AFP = 0.0775;
+    const AGUI = 0.041;
+    const ISSS = 0.075;
+    const ISSS_TOPE = 1000;
+    const SEPT_SEMANAS = 4.3333; // promedio de domingos/mes
+    const VAC_DIAS_MES = 1.25;   // 15 días / 12 meses
+    const INCAF = 0.01;
+
+    let totalGeneral = 0;
+
+    document.querySelectorAll('#modBody tr[data-salario]').forEach(tr=>{
+      const s = parseFloat(tr.dataset.salario || '0');
+
+      const afp  = s * AFP;
+      const isss = Math.min(s, ISSS_TOPE) * ISSS;
+      const sept = (s / 30) * SEPT_SEMANAS;
+      const agui = s * AGUI;
+      const vac  = (s / 30) * VAC_DIAS_MES; // como tu ejemplo
+      const incf = s * INCAF;
+
+      const total = s + afp + isss + sept + agui + vac + incf;
+      totalGeneral += total;
+
+      tr.querySelector('.s-salario').textContent  = fmt(s);
+      tr.querySelector('.s-afp').textContent      = fmt(afp);
+      tr.querySelector('.s-isss').textContent     = fmt(isss);
+      tr.querySelector('.s-septimo').textContent  = fmt(sept);
+      tr.querySelector('.s-aguinaldo').textContent= fmt(agui);
+      tr.querySelector('.s-vac').textContent      = fmt(vac);
+      tr.querySelector('.s-incaf').textContent    = fmt(incf);
+      tr.querySelector('.s-total').textContent    = fmt(total);
+    });
+
+    document.getElementById('totalGeneral').textContent = fmt(totalGeneral);
+  })();
+</script>
 </body>
 </html>

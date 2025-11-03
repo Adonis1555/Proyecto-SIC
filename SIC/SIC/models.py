@@ -37,6 +37,7 @@ class Transaccion(models.Model):
     def __str__(self):
         return f"{self.fecha} - {self.cuenta.codigo} - {self.tipo} {self.monto}"
 
+# --- INICIO BLOQUE HEAD (TUS MODELOS) ---
 class Periodo(models.Model):
     nombre = models.CharField(max_length=50)  # Ej: "Enero 2025"
     fecha_inicio = models.DateField()
@@ -55,3 +56,61 @@ class BalanceComprobacion(models.Model):
 
     def __str__(self):
         return f"{self.cuenta.nombre} - {self.periodo.nombre}"
+# --- FIN BLOQUE HEAD ---
+
+    
+# --- INICIO BLOQUE ADONIS (CIF Y MOD) ---
+# --- CIF: costos indirectos de fabricación ---
+class Cif(models.Model):
+    codigo = models.CharField(max_length=20, unique=True, null=True, blank=True, editable=False)
+    nombre = models.CharField(max_length=150)
+    monto  = models.DecimalField(max_digits=12, decimal_places=2)
+    notas  = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        if is_new and not self.codigo:
+            self.codigo = f"CIF-{self.pk:05d}"
+            super().save(update_fields=["codigo"])
+
+    def __str__(self):
+        return f"{self.codigo} • {self.nombre}"
+
+
+# === MOD: Mano de Obra Directa ===
+class ModEmpleado(models.Model):
+    CARGOS_MOD = [
+        ("Líder técnico", "Líder técnico"),
+        ("Desarrollador senior", "Desarrollador senior"),
+        ("Desarrollador junior", "Desarrollador junior"),
+        ("Tester QA", "Tester QA"),
+        ("Admin. de servidores/BD", "Admin. de servidores/BD"),
+        ("Diseñador UX/UI", "Diseñador UX/UI"),
+        ("Especialista en seguridad", "Especialista en seguridad"),
+        ("Analista funcional", "Analista funcional"),
+    ]
+
+    codigo  = models.CharField(max_length=20, unique=True, null=True, blank=True, editable=False)
+    nombre  = models.CharField(max_length=120)
+    cargo   = models.CharField(max_length=50, choices=CARGOS_MOD)
+    salario = models.DecimalField(max_digits=12, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        if is_new and not self.codigo:
+            self.codigo = f"MOD-{self.pk:05d}"
+            super().save(update_fields=["codigo"])
+
+    def __str__(self):
+        return f"{self.codigo} • {self.nombre} ({self.cargo})"
+# --- FIN BLOQUE ADONIS ---

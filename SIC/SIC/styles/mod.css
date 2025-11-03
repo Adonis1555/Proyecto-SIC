@@ -1,0 +1,5 @@
+.mt-nav{ margin-top:80px; }
+.mono{
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
