@@ -4,15 +4,36 @@
   {% load static %}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mano de obra directa</title>
-  <!-- Mantengo tu css original -->
+  <title>Empleados</title>
+
   <link rel="stylesheet" href="{% static 'libroMayor.css' %}">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <style>
+    :root{ --page-max: 1300px; }
     .mt-nav{ margin-top:80px; }
     .mono{ font-variant-numeric: tabular-nums; font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; }
     .table tfoot th, .table tfoot td{ font-weight:700; }
     .nowrap{ white-space:nowrap; }
+
+    /* Layout centrado y limpio */
+    .page-wrap{ max-width: var(--page-max); margin-inline:auto; padding-inline:2rem;}
+    .card-compact .card-body{ padding: 22px; }
+    .hero-title{ text-align:center; font-weight:800; letter-spacing:.3px; margin-bottom:18px; }
+
+    /* Form a la derecha en desktop, centrado en mobile */
+    .grid{
+      display:grid; gap:18px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 992px){
+      .grid{ grid-template-columns: 1.2fr; justify-content:center; }
+    }
+
+    /* Badges de estado */
+    .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+    .chip{ border:1px solid var(--bs-border-color); border-radius:999px; padding:6px 10px; font-size:12px; }
+    .chip.missing{ background:#fff1f0; border-color:#ffcccc; color:#b42318; }
+    .chip.ok{ background:#f0fff4; border-color:#b8f0c6; color:#18794e; }
   </style>
 </head>
 <body>
@@ -28,7 +49,7 @@
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle active" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              Mano de obra directa
+              Empleados
             </a>
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="{% url 'costos' %}">Costos</a></li>
@@ -38,65 +59,98 @@
             </ul>
           </li>
         </ul>
+        <span class="navbar-text small text-white-50">MAX 30 empleados</span>
       </div>
     </div>
   </nav>
 </header>
 
-<main class="container mt-nav pb-5">
+<main class="page-wrap mt-nav pb-5">
 
-  <h2 class="text-center fw-bold mb-3">Mano de obra directa</h2>
+  <h2 class="hero-title">Empleados</h2>
 
   <!-- Alta de empleado MOD -->
-  <section class="card shadow-sm mb-4">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0">Agregar colaborador</h5>
-        <span class="badge bg-secondary">
-          {% with c=empleados|length|default:0 %}{{ c }}{% endwith %} / 30
-        </span>
+  <section class="grid">
+    <div class="card shadow-sm card-compact">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="mb-0">Agregar colaborador</h5>
+          <span class="badge bg-secondary">
+            {% with c=empleados|length|default:0 %}{{ c }}{% endwith %} / 30
+          </span>
+        </div>
+
+        <form method="post" class="row g-3" id="formMOD"
+              data-count="{% with c=empleados|length|default:0 %}{{ c }}{% endwith %}">
+          {% csrf_token %}
+          <div class="col-lg-6">
+            <label class="form-label">Nombre completo</label>
+            <input class="form-control" type="text" name="nombre" placeholder="Ej.: Juan Pérez" required>
+          </div>
+          <div class="col-lg-4">
+            <label class="form-label">Cargo (MOD)</label>
+            <select class="form-select" name="cargo" id="cargoSelect" required>
+              <option value="" selected disabled>Selecciona…</option>
+
+              <!-- ÚNICOS -->
+              <optgroup label="Roles únicos">
+                <option>Gerente general técnico</option>
+                <option>Contador general</option>
+                <option>Auditor interno</option>
+                <option>Jefe de ventas</option>
+                <option>Coordinador de marketing</option>
+              </optgroup>
+
+              <!-- MOD requeridos (al menos 1) -->
+              <optgroup label="MOD (requeridos)">
+                <option>Líder técnico</option>
+                <option>Desarrollador senior</option>
+                <option>Desarrollador junior</option>
+                <option>Tester QA</option>
+                <option>Admin. de servidores/BD</option>
+              </optgroup>
+
+              <!-- Otros de apoyo (no únicos) -->
+              <optgroup label="Otras áreas">
+                <option>Asistente administrativo</option>
+                <option>Vendedor</option>
+                <option>Soporte/Atención al cliente</option>
+                <option>Diseñador gráfico</option>
+                <option>Especialista en seguridad</option>
+              </optgroup>
+            </select>
+            <div class="form-text" id="cargoHint"></div>
+          </div>
+          <div class="col-lg-2">
+            <label class="form-label">Salario nominal (USD)</label>
+            <input class="form-control" type="number" step="0.01" min="0" name="salario" placeholder="0.00" required>
+          </div>
+
+          <div class="col-12 d-flex justify-content-end gap-2">
+            <button class="btn btn-primary" type="submit" id="btnGuardar">Guardar empleado</button>
+            <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
+          </div>
+        </form>
+
+        <small class="text-muted d-block mt-2">
+          * Se admiten únicamente cargos que participan directamente en la producción del software.  
+        </small>
       </div>
+    </div>
+  </section>
 
-      <form method="post" class="row g-3" id="formMOD"
-            data-count="{% with c=empleados|length|default:0 %}{{ c }}{% endwith %}">
-        {% csrf_token %}
-        <div class="col-md-6">
-          <label class="form-label">Nombre completo</label>
-          <input class="form-control" type="text" name="nombre" placeholder="Ej.: Juan Pérez" required>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Cargo (MOD)</label>
-          <select class="form-select" name="cargo" required>
-            <option value="" selected disabled>Selecciona…</option>
-            <option>Líder técnico</option>
-            <option>Desarrollador senior</option>
-            <option>Desarrollador junior</option>
-            <option>Tester QA</option>
-            <option>Admin. de servidores/BD</option>
-            <option>Diseñador UX/UI</option>
-            <option>Especialista en seguridad</option>
-            <option>Analista funcional</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Salario nominal (USD)</label>
-          <input class="form-control" type="number" step="0.01" min="0" name="salario" placeholder="0.00" required>
-        </div>
-
-        <div class="col-12 d-flex justify-content-end gap-2">
-          <button class="btn btn-primary" type="submit" id="btnGuardar">Guardar empleado</button>
-          <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
-        </div>
-      </form>
-
-      <small class="text-muted d-block mt-2">
-        * Se admiten únicamente cargos que participan directamente en la producción del software  
-      </small>
+  <!-- Resumen de cobertura de roles requeridos -->
+  <section class="card shadow-sm mt-3 card-compact">
+    <div class="card-body">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <h6 class="mb-0">Cobertura de roles requeridos</h6>
+        <div class="chips" id="chipsRoles"></div>
+      </div>
     </div>
   </section>
 
   <!-- Listado con cálculo de costo mensual real por empleado -->
-  <section class="card shadow-sm">
+  <section class="card shadow-sm mt-3">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <h5 class="mb-0">Listado de MOD</h5>
@@ -127,7 +181,7 @@
           <tbody id="modBody">
             {% if empleados and empleados|length > 0 %}
               {% for e in empleados %}
-              <tr data-salario="{{ e.salario|floatformat:2 }}">
+              <tr data-salario="{{ e.salario|floatformat:2 }}" data-cargo="{{ e.cargo }}">
                 <td class="mono">{{ e.codigo }}</td>
                 <td>{{ e.nombre }}</td>
                 <td>{{ e.cargo }}</td>
@@ -236,30 +290,28 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Limitar a 30 empleados en el botón de guardar (solo UX)
+  // ===== Utilidades =====
+  const fmt = v => (isNaN(v)? 0 : v).toLocaleString('en-US',{style:'currency', currency:'USD'});
+  const norm = (s) => (s||'').toString()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // quita acentos
+    .replace(/[.\u200B]/g,'')                        // puntos/zero-width
+    .replace(/\s+/g,' ')                             // espacios
+    .trim().toLowerCase();
+
+  // ===== Datos de negocio =====
+  const UNIQUE_ROLES = new Set([
+    'gerente general tecnico','contador general','auditor interno',
+    'jefe de ventas','coordinador de marketing'
+  ]);
+
+  const REQUIRED_ROLES = [
+    'lider tecnico','desarrollador senior','desarrollador junior',
+    'tester qa','admin de servidores/bd'
+  ];
+
+  // ===== Cálculos por fila + totales =====
   (function(){
-    const form = document.getElementById('formMOD');
-    if(!form) return;
-    const count = Number(form.dataset.count || 0);
-    const btn = document.getElementById('btnGuardar');
-    if(count >= 30 && btn){
-      btn.disabled = true;
-      btn.title = 'Límite de 30 personas alcanzado';
-    }
-  })();
-
-  // Cálculo por fila en el listado (formato en-US)
-  (function(){
-    const fmt = v => (isNaN(v)? 0 : v).toLocaleString('en-US',{style:'currency', currency:'USD'});
-
-    const AFP = 0.0775;
-    const AGUI = 0.041;
-    const ISSS = 0.075;
-    const ISSS_TOPE = 1000;
-    const SEPT_SEMANAS = 4.3333; // promedio de domingos/mes
-    const VAC_DIAS_MES = 1.25;   // 15 días / 12 meses
-    const INCAF = 0.01;
-
+    const AFP = 0.0775, AGUI = 0.041, ISSS = 0.075, ISSS_TOPE = 1000, SEPT = 4.3333, VAC_DIAS = 1.25, INCAF = 0.01;
     let totalGeneral = 0;
 
     document.querySelectorAll('#modBody tr[data-salario]').forEach(tr=>{
@@ -267,9 +319,9 @@
 
       const afp  = s * AFP;
       const isss = Math.min(s, ISSS_TOPE) * ISSS;
-      const sept = (s / 30) * SEPT_SEMANAS;
+      const sept = (s / 30) * SEPT;
       const agui = s * AGUI;
-      const vac  = (s / 30) * VAC_DIAS_MES; // como tu ejemplo
+      const vac  = (s / 30) * VAC_DIAS;
       const incf = s * INCAF;
 
       const total = s + afp + isss + sept + agui + vac + incf;
@@ -286,6 +338,72 @@
     });
 
     document.getElementById('totalGeneral').textContent = fmt(totalGeneral);
+  })();
+
+  // ===== Validaciones UX (máx 30, únicos, cobertura) =====
+  (function(){
+    const form = document.getElementById('formMOD');
+    if(!form) return;
+    const cargoSel = document.getElementById('cargoSelect');
+    const hint = document.getElementById('cargoHint');
+    const btn = document.getElementById('btnGuardar');
+    const count = Number(form.dataset.count || 0);
+
+    // Bloqueo por límite 30
+    if(count >= 30){
+      btn.disabled = true;
+      btn.title = 'Límite de 30 personas alcanzado';
+    }
+
+    // Índice actual de cargos en tabla
+    const cargosActuales = Array.from(document.querySelectorAll('#modBody tr[data-cargo]'))
+      .map(tr => norm(tr.dataset.cargo));
+
+    // Al cambiar cargo: validar únicos
+    function validarCargo(){
+      const val = norm(cargoSel.value);
+      let msg = '';
+
+      if(UNIQUE_ROLES.has(val) && cargosActuales.includes(val)){
+        msg = 'Ya existe un empleado con este cargo (rol único).';
+        cargoSel.setCustomValidity(msg);
+        btn.disabled = true;
+      }else if(count >= 30){
+        msg = 'No puedes agregar más de 30 empleados.';
+        cargoSel.setCustomValidity(msg);
+        btn.disabled = true;
+      }else{
+        cargoSel.setCustomValidity('');
+        btn.disabled = false;
+      }
+      hint.textContent = msg;
+      hint.className = 'form-text ' + (msg ? 'text-danger' : 'text-muted');
+    }
+    cargoSel.addEventListener('change', validarCargo);
+    validarCargo();
+
+    // Cobertura de roles requeridos (solo visual)
+    function pintarChips(){
+      const existentes = new Set(cargosActuales);
+      const cont = document.getElementById('chipsRoles');
+      cont.innerHTML = '';
+      REQUIRED_ROLES.forEach(r=>{
+        const ok = existentes.has(r);
+        const div = document.createElement('div');
+        div.className = 'chip ' + (ok ? 'ok' : 'missing');
+        div.textContent = (r.charAt(0).toUpperCase() + r.slice(1));
+        cont.appendChild(div);
+      });
+    }
+    pintarChips();
+
+    // Enviar: revalidar por si acaso
+    form.addEventListener('submit', (e)=>{
+      validarCargo();
+      if(cargoSel.validationMessage){
+        e.preventDefault();
+      }
+    });
   })();
 </script>
 </body>

@@ -1,18 +1,15 @@
-# --- Imports Resueltos ---
-from calendar import monthrange
-from datetime import date, timedelta
-from decimal import Decimal
-
-from django.contrib.auth.decorators import login_required
-from django.db.models import Sum
-from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
-
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Transaccion, Cuenta, Periodo, BalanceComprobacion, Cif, ModEmpleado
 from .forms import TransaccionForm
-from .models import (
-    BalanceComprobacion, Cif, Cuenta, ModEmpleado, Periodo, Transaccion
-)
-# --- Fin Imports Resueltos ---
+from django.db.models import Sum
+from django.utils import timezone
+from decimal import Decimal
+from datetime import date, timedelta
+from calendar import monthrange
+from django.db import connection
+from django.shortcuts import render
+from django.db.models import Sum
+from .models import Cif
 
 
 def transacciones(request):
@@ -25,11 +22,9 @@ def transacciones(request):
         hoy = timezone.now().date()
         primer_dia = hoy.replace(day=1)
         ultimo_dia = hoy.replace(day=monthrange(hoy.year, hoy.month)[1])
-    
     if request.method == 'POST':
         form = TransaccionForm(request.POST, primer_dia=primer_dia, ultimo_dia=ultimo_dia)
         if form.is_valid():
-            # --- Bloque de HEAD (Tus cambios de IVA y Periodo) ---
             transaccion = form.save(commit=False)
             transaccion.periodo = periodo_abierto
             transaccion.save()
@@ -72,14 +67,12 @@ def transacciones(request):
                    periodo=periodo_abierto,
                )
             return redirect('transacciones')  
-            # --- Fin Bloque de HEAD ---
     else:
         form = TransaccionForm(primer_dia=primer_dia, ultimo_dia=ultimo_dia)
     
     cuentas = Cuenta.objects.filter(automatica=False).order_by('codigo')
     transacciones_list = Transaccion.objects.filter(periodo=periodo_abierto).order_by('-fecha')
 
-    # --- Bloque de HEAD (Tu lógica de totales) ---
     resultado_debe = transacciones_list.filter(tipo='Debe').aggregate(Sum('monto'))
     total_debe = resultado_debe.get('monto__sum') or Decimal('0.00')
 
@@ -94,15 +87,11 @@ def transacciones(request):
         'primer_dia': primer_dia,
         'ultimo_dia': ultimo_dia
     })
-    # --- Fin Bloque de HEAD ---
-
 
 def resultados(request):
     return render(request, 'resultados.html')
 
-
 def BalanceC(request):
-    # --- Bloque de HEAD (Tu nueva vista) ---
     periodos = Periodo.objects.filter(cerrado=True).order_by('-fecha_inicio')
 
     # Obtener el periodo seleccionado desde GET
@@ -134,23 +123,16 @@ def BalanceC(request):
         'total_debe': totales['total_debe'],
         'total_haber': totales['total_haber']
     })
-    # --- Fin Bloque de HEAD ---
-
-
 def BalanceG(request):
     return render(request, 'BalanceG.html')
-
 
 def EstadoCapital(request):
     return render(request, 'EstadoCapital.html')
 
-
 def EstadoFinancieros(request):
     return render(request, 'EstadosFinancieros.html')
 
-
 def libroMayor(request):
-    # --- Bloque de HEAD (Tu lógica de periodo) ---
     periodo_id = request.GET.get('periodo')
 
     periodo_abierto = Periodo.objects.filter(cerrado=False).order_by('-fecha_inicio').first()
@@ -179,26 +161,23 @@ def libroMayor(request):
         'periodos': periodos,
         'periodo_seleccionado': periodo_seleccionado
     }
-    # --- Fin Bloque de HEAD ---
+
     return render(request, 'libroMayor.html', context)
 
 
 def costos(request):
     return render(request, 'costos.html')
 
-
 def catalogo(request):
     cuentas = Cuenta.objects.all().order_by('codigo')
     
-    return render(request, 'catalogo.html', {
+    return render(request, 'Catalogo.html', {
         'cuentas': cuentas
     })
-    # Nota: esta línea de abajo estaba duplicada en tu código, la he quitado.
-    # return render(request, 'catalogo.html')
 
-
-# --- INICIO BLOQUE ADONIS (cif y mod) ---
-# --- CIF: VISTA CRUD ---
+# =========================
+# CIF: CRUD
+# =========================
 def cif(request):
     """
     Pantalla de CIF:
@@ -206,85 +185,77 @@ def cif(request):
       - Editar: POST action=update  con id, nombre, monto, notas
       - Borrar: POST action=delete  con id
     """
-    if request.method == 'POST':
-        action = (request.POST.get('action') or 'create').strip()
+    if request.method == "POST":
+        action = (request.POST.get("action") or "create").strip()
 
-        if action == 'create':
-            nombre = (request.POST.get('nombre') or '').strip()
-            monto = Decimal(request.POST.get('monto') or '0')
-            notas = (request.POST.get('notas') or '').strip()
+        if action == "create":
+            nombre = (request.POST.get("nombre") or "").strip()
+            monto = Decimal(request.POST.get("monto") or "0")
+            notas = (request.POST.get("notas") or "").strip()
             if nombre and monto >= 0:
                 Cif.objects.create(nombre=nombre, monto=monto, notas=notas)
-            return redirect('cif')
+            return redirect("cif")
 
-        if action == 'update':
-            obj = get_object_or_404(Cif, pk=request.POST.get('id'))
-            obj.nombre = (request.POST.get('nombre') or '').strip()
-            obj.monto = Decimal(request.POST.get('monto') or '0')
-            obj.notas = (request.POST.get('notas') or '').strip()
+        if action == "update":
+            obj = get_object_or_404(Cif, pk=request.POST.get("id"))
+            obj.nombre = (request.POST.get("nombre") or "").strip()
+            obj.monto = Decimal(request.POST.get("monto") or "0")
+            obj.notas = (request.POST.get("notas") or "").strip()
             obj.save()
-            return redirect('cif')
+            return redirect("cif")
 
-        if action == 'delete':
-            obj = get_object_or_404(Cif, pk=request.POST.get('id'))
+        if action == "delete":
+            obj = get_object_or_404(Cif, pk=request.POST.get("id"))
             obj.delete()
-            return redirect('cif')
+            return redirect("cif")
 
     # GET: listar y totalizar
-    cifs = Cif.objects.order_by('id')
-    total = cifs.aggregate(total=Sum('monto'))['total'] or Decimal('0')
-    return render(request, 'cif.html', {'cifs': cifs, 'total_cif': total})
-# --- FIN CIF ---
+    cifs = Cif.objects.order_by("id")
+    total = cifs.aggregate(total=Sum("monto"))["total"] or Decimal("0")
+    return render(request, "cif.html", {"cifs": cifs, "total_cif": total})
 
-
-# === MOD: VISTA CRUD ===
+# =========================
+# MOD: CRUD simple
+# =========================
 def mod(request):
     """
-    Pantalla de MOD:
-      - Crear:  POST action=create  con nombre, cargo, salario
-      - Editar: POST action=update  con id, nombre, cargo, salario
-      - Borrar: POST action=delete  con id
-    Renderiza 'mod.html' con 'empleados' y 'total_salarios'
+    Pantalla de MOD (Mano de Obra Directa):
+      - Crear:  POST action=create  (nombre, cargo, salario)
+      - Editar: POST action=update  (id, nombre, cargo, salario)
+      - Borrar: POST action=delete  (id)
     """
-    if request.method == 'POST':
-        action = (request.POST.get('action') or 'create').strip()
+    if request.method == "POST":
+        action = (request.POST.get("action") or "create").strip()
 
-        if action == 'create':
-            # Límite de 30 empleados
+        if action == "create":
             if ModEmpleado.objects.count() < 30:
-                nombre = (request.POST.get('nombre') or '').strip()
-                cargo = (request.POST.get('cargo') or '').strip()
-                salario = Decimal(request.POST.get('salario') or '0')
+                nombre = (request.POST.get("nombre") or "").strip()
+                cargo = (request.POST.get("cargo") or "").strip()
+                salario = Decimal(request.POST.get("salario") or "0")
                 if nombre and cargo and salario >= 0:
                     ModEmpleado.objects.create(nombre=nombre, cargo=cargo, salario=salario)
-            return redirect('mod')
+            return redirect("mod")
 
-        if action == 'update':
-            obj = get_object_or_404(ModEmpleado, pk=request.POST.get('id'))
-            obj.nombre = (request.POST.get('nombre') or '').strip()
-            obj.cargo = (request.POST.get('cargo') or '').strip()
-            obj.salario = Decimal(request.POST.get('salario') or '0')
+        if action == "update":
+            obj = get_object_or_404(ModEmpleado, pk=request.POST.get("id"))
+            obj.nombre = (request.POST.get("nombre") or "").strip()
+            obj.cargo = (request.POST.get("cargo") or "").strip()
+            obj.salario = Decimal(request.POST.get("salario") or "0")
             obj.save()
-            return redirect('mod')
+            return redirect("mod")
 
-        if action == 'delete':
-            obj = get_object_or_404(ModEmpleado, pk=request.POST.get('id'))
+        if action == "delete":
+            obj = get_object_or_404(ModEmpleado, pk=request.POST.get("id"))
             obj.delete()
-            return redirect('mod')
+            return redirect("mod")
 
-    # GET
-    empleados = ModEmpleado.objects.order_by('id')
-    total_salarios = empleados.aggregate(total=Sum('salario'))['total'] or Decimal('0')
-    return render(request, 'mod.html', {'empleados': empleados, 'total_salarios': total_salarios})
-# === FIN MOD ===
-# --- FIN BLOQUE ADONIS ---
-
+    empleados = ModEmpleado.objects.order_by("id")
+    total_salarios = empleados.aggregate(total=Sum("salario"))["total"] or Decimal("0")
+    return render(request, "mod.html", {"empleados": empleados, "total_salarios": total_salarios})
 
 def estimacion(request):
     return render(request, 'estimacion.html')
 
-
-# --- INICIO BLOQUE HEAD (Tu lógica de Cierre) ---
 def cerrar_periodo(periodo):
 
     transacciones = Transaccion.objects.filter(periodo__isnull=True)
@@ -377,4 +348,32 @@ def cerrar_periodo_view(request):
         return render(request, 'EstadosFinancieros.html', {
             'periodos': periodos
         })
-# --- FIN BLOQUE HEAD ---
+
+
+
+def estimacion_ifpug(request):
+    # --- 1) Roles (cargo + salario_real_mensual) desde la VISTA ---
+    roles_mod = []
+    with connection.cursor() as cur:
+        # Ajusta columnas si tu vista expone otros nombres
+        cur.execute("""
+            SELECT cargo, salario_real_mensual
+            FROM public.v_mod_empleado_costos
+            WHERE cargo IS NOT NULL
+            ORDER BY cargo;
+        """)
+        for cargo, salario_real_mensual in cur.fetchall():
+            roles_mod.append({
+                "cargo": cargo,
+                "salario_real_mensual": float(salario_real_mensual or 0),
+            })
+
+    # --- 2) CIF mensual total (suma de Cif.monto) ---
+    total_cif = Cif.objects.aggregate(s=Sum('monto'))['s'] or 0
+
+    ctx = {
+        "roles_mod": roles_mod,           # lo consumimos como json_script en el template
+        "total_cif": float(total_cif),
+        # ... (agrega aquí lo demás que ya pasabas: datos de módulos, etc.)
+    }
+    return render(request, "estimacion_ifpug.html", ctx)

@@ -1,5 +1,8 @@
 from django.db import models
 
+# =========================
+# Plan de cuentas
+# =========================
 class Cuenta(models.Model):
     TIPOS_CUENTA = [
         ('ACT', 'Activo'),
@@ -16,11 +19,14 @@ class Cuenta(models.Model):
     haber = models.DecimalField(max_digits=10, decimal_places=2)
     cuenta_padre = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
     automatica = models.BooleanField(default=False)
-    
+
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"
 
-#Transaccion define cada movimiento
+
+# =========================
+# Transacciones
+# =========================
 class Transaccion(models.Model):
     fecha = models.DateField()
     cuenta = models.ForeignKey('Cuenta', on_delete=models.CASCADE)  # Relación con modelo Cuenta
@@ -37,17 +43,23 @@ class Transaccion(models.Model):
     def __str__(self):
         return f"{self.fecha} - {self.cuenta.codigo} - {self.tipo} {self.monto}"
 
-# --- INICIO BLOQUE HEAD (TUS MODELOS) ---
+
+# =========================
+# Periodos contables
+# =========================
 class Periodo(models.Model):
     nombre = models.CharField(max_length=50)  # Ej: "Enero 2025"
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField(null=True, blank=True)
     cerrado = models.BooleanField(default=False)
-    
 
     def __str__(self):
         return self.nombre
 
+
+# =========================
+# Balance de Comprobación
+# =========================
 class BalanceComprobacion(models.Model):
     periodo = models.ForeignKey('Periodo', on_delete=models.CASCADE)
     cuenta = models.ForeignKey('Cuenta', on_delete=models.CASCADE)
@@ -56,33 +68,35 @@ class BalanceComprobacion(models.Model):
 
     def __str__(self):
         return f"{self.cuenta.nombre} - {self.periodo.nombre}"
-# --- FIN BLOQUE HEAD ---
 
-    
-# --- INICIO BLOQUE ADONIS (CIF Y MOD) ---
-# --- CIF: costos indirectos de fabricación ---
+
+# =========================
+# CIF: Costos indirectos de fabricación
+# =========================
 class Cif(models.Model):
     codigo = models.CharField(max_length=20, unique=True, null=True, blank=True, editable=False)
-    nombre = models.CharField(max_length=150)
+    nombre = models.CharField(max_length=150)   # p. ej. "Recibo de agua potable"
     monto  = models.DecimalField(max_digits=12, decimal_places=2)
     notas  = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["id"]
+        ordering = ['id']
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
         if is_new and not self.codigo:
             self.codigo = f"CIF-{self.pk:05d}"
-            super().save(update_fields=["codigo"])
+            super().save(update_fields=['codigo'])
 
     def __str__(self):
         return f"{self.codigo} • {self.nombre}"
 
 
-# === MOD: Mano de Obra Directa ===
+# =========================
+# MOD: Mano de Obra Directa
+# =========================
 class ModEmpleado(models.Model):
     CARGOS_MOD = [
         ("Líder técnico", "Líder técnico"),
@@ -102,15 +116,14 @@ class ModEmpleado(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["id"]
+        ordering = ['id']
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
         if is_new and not self.codigo:
             self.codigo = f"MOD-{self.pk:05d}"
-            super().save(update_fields=["codigo"])
+            super().save(update_fields=['codigo'])
 
     def __str__(self):
         return f"{self.codigo} • {self.nombre} ({self.cargo})"
-# --- FIN BLOQUE ADONIS ---

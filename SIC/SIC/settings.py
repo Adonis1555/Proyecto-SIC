@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'SIC.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'sicdb',
+        'NAME': 'BASESIC',
         'USER': 'postgres',
         'PASSWORD': 'admin',
         'HOST': 'localhost',
