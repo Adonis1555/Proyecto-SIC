@@ -41,7 +41,7 @@ def transacciones(request):
      
               if transaccion.tipo == 'Haber':
                   # Transacción de Debito → IVA va al Debito
-                  iva_cuenta = Cuenta.objects.get(codigo='2110')  # IVA débito
+                  iva_cuenta = Cuenta.objects.get(codigo='1108')  # IVA débito
                   print("iva",iva_cuenta)
                   Transaccion.objects.create(
                       fecha=transaccion.fecha,
@@ -52,7 +52,7 @@ def transacciones(request):
                       periodo=periodo_abierto,
                   )
               else:
-               iva_cuenta = Cuenta.objects.get(codigo='1108')  
+               iva_cuenta = Cuenta.objects.get(codigo='2110')  
                Transaccion.objects.create(
                    fecha=transaccion.fecha,
                    cuenta=iva_cuenta,
