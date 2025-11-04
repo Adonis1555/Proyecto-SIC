@@ -1,90 +1,206 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estimacion de proyecto</title>
-     <link rel="stylesheet" href="{% static 'BalanceG.css' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Estimación de Costos • Puntos de Función</title>
+  <link rel="stylesheet" href="estimacion.css" />
 </head>
 <body>
-    <header>
-  <nav class="navbar navbar-expand-lg bg-body-tertiary fixed-top" data-bs-theme="dark">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">NovaSoft</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
-        aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+  <header class="app-header">
+    <h1>Estimación de Costos del Proyecto</h1>
+    <p>Método: Puntos de Función (IFPUG)</p>
+  </header>
 
-      <div class="collapse navbar-collapse" id="navbarNavAltMarkup">  
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-              aria-expanded="false">
-             Estimacion de proyecto
-            </a>
-            <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'costos' %}">Costos</a></li>
-              <li><a class="dropdown-item" href="{% url 'estados' %}">Estados financieros</a></li>
-              <li><a class="dropdown-item" href="{% url 'transacciones' %}">Transacciones</a></li>
-              <li><a class="dropdown-item" href="{% url 'mayor' %}">Libro Mayor</a></li>
-              <li><a class="dropdown-item" href="{% url 'catalogo' %}">Catalogo de cuentas</a></li>
-            </ul>
-          </li>
-        </ul>
+  <main class="container">
+    <!-- === 1. Información del Proyecto === -->
+    <section class="card">
+      <h2>Información del Proyecto</h2>
+      <div class="grid cols-4 gap">
+        <label class="field">
+          <span>Nombre del proyecto</span>
+          <input name="proyecto" type="text" placeholder="Sistema Contable NovaSoft" />
+        </label>
+        <label class="field">
+          <span>Cliente</span>
+          <input name="cliente" type="text" placeholder="Contabilidad Global S.A." />
+        </label>
+        <label class="field">
+          <span>Responsable</span>
+          <input name="responsable" type="text" placeholder="Ing. Responsable" />
+        </label>
+        <label class="field">
+          <span>Fecha de estimación</span>
+          <input name="fecha" type="date" />
+        </label>
       </div>
-    </div>
-  </nav>
-</header>
-    <body>
-        <h2 class="titulo-balanceG">Balance General</h2>
-        <div class="select-container">
-             <select class="form-select form-select-sm" aria-label="Small select example">
-         <option selected>Seleccione un perido</option>
-         <option value="1">One</option>
-         <option value="2">Two</option>
-         <option value="3">Three</option>
-        </select>
-        </div>
-       
-        <div class="tabla-balanceG">
-            <table class="table">
-  <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">First</th>
-      <th scope="col">Last</th>
-      <th scope="col">Handle</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row">1</th>
-      <td>Mark</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>Jacob</td>
-      <td>Thornton</td>
-      <td>@fat</td>
-    </tr>
-    <tr class="table-success">
-      <th scope="row">3</th>
-      <td colspan="2">Larry the Bird</td>
-      <td>@twitter</td>
-    </tr>
-  </tbody>
-</table>
-        </div>
-        
-    </body>
-    <footer>
-         <p class="texto-footer">NovaSoft &copy; 2025</p>
-    </footer>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    </section>
+
+    <!-- === 2. Requerimientos / Puntos de Función === -->
+    <section class="card">
+      <div class="section-head">
+        <h2>Requerimientos (Puntos de Función)</h2>
+        <p class="muted">Capture por tipo: <strong>EI</strong> (Entradas), <strong>EO</strong> (Salidas), <strong>EQ</strong> (Consultas), <strong>ILF</strong> (Archivos lógicos internos), <strong>EIF</strong> (Archivos de interfaz externa).</p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:8rem">Código</th>
+              <th>Descripción</th>
+              <th style="width:7rem">Tipo</th>
+              <th style="width:7rem">DET</th>
+              <th style="width:7rem">FTR</th>
+            </tr>
+          </thead>
+          <tbody id="pf-rows">
+            <!-- Filas de ejemplo (puedes duplicarlas en Django o con JS) -->
+            <tr>
+              <td><input name="cod[]" type="text" placeholder="R1" /></td>
+              <td><input name="desc[]" type="text" placeholder="Registrar transacciones" /></td>
+              <td>
+                <select name="tipo[]">
+                  <option>EI</option><option>EO</option><option>EQ</option>
+                  <option>ILF</option><option>EIF</option>
+                </select>
+              </td>
+              <td><input name="det[]" type="number" min="1" placeholder="DET" /></td>
+              <td><input name="ftr[]" type="number" min="0" placeholder="FTR" /></td>
+            </tr>
+            <tr>
+              <td><input name="cod[]" type="text" placeholder="R2" /></td>
+              <td><input name="desc[]" type="text" placeholder="Generar reportes" /></td>
+              <td>
+                <select name="tipo[]">
+                  <option>EI</option><option selected>EO</option><option>EQ</option>
+                  <option>ILF</option><option>EIF</option>
+                </select>
+              </td>
+              <td><input name="det[]" type="number" min="1" placeholder="DET" /></td>
+              <td><input name="ftr[]" type="number" min="0" placeholder="FTR" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="hint">
+        <p><strong>Nota:</strong> Las ponderaciones por complejidad (baja/media/alta) de cada tipo PF
+        se calculan según las tablas IFPUG usando <em>DET</em> y <em>FTR</em>. Este formulario
+        está listo para que el cálculo lo haga el backend (Django) o, si prefieres, JS en el cliente.</p>
+      </div>
+    </section>
+
+    <!-- === 3. Ajuste de Complejidad Técnica (VAF con 14 factores) === -->
+    <section class="card">
+      <h2>Ajuste de Complejidad Técnica (VAF)</h2>
+      <p class="muted">Valora cada factor entre 0 (no aplica) y 5 (influencia fuerte). Fórmula sugerida:
+        <code>VAF = 0.65 + 0.01 × ΣFI</code>, con 14 factores.</p>
+
+      <div class="grid cols-4 gap factors">
+        <!-- 14 factores clásicos IFPUG -->
+        <label class="field"><span>FI1. Comunicación de datos</span><input name="fi1" type="number" min="0" max="5" placeholder="0–5" /></label>
+        <label class="field"><span>FI2. Procesamiento distribuido</span><input name="fi2" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI3. Rendimiento</span><input name="fi3" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI4. Configuración fuertemente usada</span><input name="fi4" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI5. Transacciones online</span><input name="fi5" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI6. Entrada de datos online</span><input name="fi6" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI7. Eficiencia del usuario final</span><input name="fi7" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI8. Actualizaciones internas de archivos</span><input name="fi8" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI9. Complejidad de procesamiento</span><input name="fi9" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI10. Reusabilidad</span><input name="fi10" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI11. Facilidad de instalación</span><input name="fi11" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI12. Facilidad de operación</span><input name="fi12" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI13. Múltiples sitios</span><input name="fi13" type="number" min="0" max="5" /></label>
+        <label class="field"><span>FI14. Facilidad de cambio</span><input name="fi14" type="number" min="0" max="5" /></label>
+      </div>
+
+      <div class="grid cols-3 gap">
+        <label class="field">
+          <span>Total FI (ΣFI)</span>
+          <input name="sum_fi" type="number" readonly placeholder="Calculado por servidor" />
+        </label>
+        <label class="field">
+          <span>VAF</span>
+          <input name="vaf" type="text" readonly placeholder="0.65 + 0.01×ΣFI" />
+        </label>
+        <label class="field">
+          <span>Puntos de función ajustados</span>
+          <input name="pf_ajustados" type="number" readonly placeholder="UFP × VAF" />
+        </label>
+      </div>
+    </section>
+
+    <!-- === 4. Parámetros de Costeo === -->
+    <section class="card">
+      <h2>Parámetros de Costeo</h2>
+      <div class="grid cols-4 gap">
+        <label class="field">
+          <span>Puntos de función sin ajuste (UFP)</span>
+          <input name="pf_sin_ajuste" type="number" placeholder="Ej. 40" />
+        </label>
+        <label class="field">
+          <span>Costo por PF (USD)</span>
+          <input name="costo_pf" type="number" step="0.01" placeholder="Ej. 200" />
+        </label>
+        <label class="field">
+          <span>Tarifa por hora (USD)</span>
+          <input name="tarifa_hora" type="number" step="0.01" placeholder="Ej. 25" />
+        </label>
+        <label class="field">
+          <span>Horas por PF</span>
+          <input name="horas_pf" type="number" step="0.1" placeholder="Ej. 2.5" />
+        </label>
+        <label class="field">
+          <span>% CIF sobre MOD</span>
+          <input name="porc_cif" type="number" step="0.01" placeholder="Ej. 13.12" />
+        </label>
+        <label class="field">
+          <span>Gastos administrativos (USD)</span>
+          <input name="gastos_admin" type="number" step="0.01" placeholder="Ej. 500" />
+        </label>
+      </div>
+    </section>
+
+    <!-- === 5. Resumen de Cálculo === -->
+    <section class="card">
+      <h2>Resumen de Estimación</h2>
+      <div class="grid cols-3 gap">
+        <label class="field">
+          <span>Costo por PF</span>
+          <input name="res_costo_pf" type="text" readonly placeholder="PF ajustados × costo/PF" />
+        </label>
+        <label class="field">
+          <span>MOD (tarifa × horas)</span>
+          <input name="res_mod" type="text" readonly placeholder="Tarifa × (PF×horas/PF)" />
+        </label>
+        <label class="field">
+          <span>CIF aplicado</span>
+          <input name="res_cif" type="text" readonly placeholder="%CIF × MOD" />
+        </label>
+        <label class="field">
+          <span>Gastos administrativos</span>
+          <input name="res_admin" type="text" readonly placeholder="Monto fijo" />
+        </label>
+        <label class="field total">
+          <span>Costo total estimado</span>
+          <input name="res_total" type="text" readonly placeholder="Suma de componentes" />
+        </label>
+      </div>
+
+      <div class="actions">
+        <!-- Estos botones no tienen JS aquí; úsalos como submit en Django -->
+        <button type="submit" class="btn primary">Guardar estimación</button>
+        <button type="reset" class="btn">Limpiar</button>
+      </div>
+      <p class="muted small">
+        * Los campos calculados se completan en el servidor (Django) o con JavaScript si decides habilitar cálculo en vivo.
+      </p>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <small>© NovaSoft • Estimación por Puntos de Función (IFPUG)</small>
+  </footer>
 </body>
 </html>
