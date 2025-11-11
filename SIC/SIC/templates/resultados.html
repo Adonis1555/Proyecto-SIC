@@ -9,9 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     
 </head>
-<body>
     <header>
-<nav class="navbar navbar-expand-lg bg-body-tertiary"  data-bs-theme="dark">
+<nav class="navbar navbar-expand-lg bg-body-tertiary fixed-top"  data-bs-theme="dark">
   <div class="container-fluid">
     <a class="navbar-brand" href="#">NovaSoft</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,55 +36,76 @@
   </div>
 </nav>
 </header>
-    <body>
-        <h2 class="titulo-resultado">Estado de resultados</h2>
-        <div class="select-container">
-             <select class="form-select form-select-sm" aria-label="Small select example">
-         <option selected>Seleccione un perido</option>
-         <option value="1">One</option>
-         <option value="2">Two</option>
-         <option value="3">Three</option>
-        </select>
-        </div>
-       
-        <div class="tabla-resultados">
-            <table class="table">
-  <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">First</th>
-      <th scope="col">Last</th>
-      <th scope="col">Handle</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row">1</th>
-      <td>Mark</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>Jacob</td>
-      <td>Thornton</td>
-      <td>@fat</td>
-    </tr>
-    <tr class="table-success">
-      <th scope="row">3</th>
-      <td colspan="2">Larry the Bird</td>
-      <td>@twitter</td>
-    </tr>
-  </tbody>
-</table>
-        </div>
-        
-    </body>
+  <body>
+    <main>
+      <h2 class="titulo-resultado">Estado de Resultados</h2>
+
+    <form method="get" class="select-container">
+      <select name="periodo" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">Seleccione un periodo</option>
+        {% for p in periodos %}
+          <option value="{{ p.id }}" {% if periodo_seleccionado and periodo_seleccionado.id == p.id %}selected{% endif %}>
+            {{ p.nombre }}
+          </option>
+        {% endfor %}
+      </select>
+    </form>
+
+    <div class="tabla-resultado">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Cuenta</th>
+            <th scope="col">Debe</th>
+            <th scope="col">Haber</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in cuentas_resultado %}
+          <tr>
+            <th scope="row">{{ c.cuenta.codigo }}</th>
+            <td>{{ c.cuenta.nombre }}</td>
+            <td>{{ c.debe|floatformat:2 }}</td>
+            <td>{{ c.haber|floatformat:2 }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center">No hay datos para este periodo</td>
+          </tr>
+          {% endfor %}
+
+          {% if cuentas_resultado %}
+          <tr class="table-success">
+            <th colspan="2">Totales</th>
+            <th>{{ total_debe|floatformat:2 }}</th>
+            <th>{{ total_haber|floatformat:2 }}</th>
+          </tr>
+
+          {% if resultado >= 0 %}
+          <tr class="table-primary fw-bold">
+            <th colspan="2">Utilidad del Ejercicio</th>
+            <th></th>
+            <th>{{ resultado|floatformat:2 }}</th>
+          </tr>
+          {% else %}
+          <tr class="table-warning fw-bold">
+            <th colspan="2">Pérdida del Ejercicio</th>
+            <th>{{ resultado|floatformat:2|add:"0"|floatformat:2 }}</th>
+            <th></th>
+          </tr>
+          {% endif %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    </main>
+  
     <footer>
          <p class="texto-footer">NovaSoft &copy; 2025</p>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
 </body>
 
 </html>

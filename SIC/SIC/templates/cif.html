@@ -2,29 +2,25 @@
 <html lang="es">
 <head>
   {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CIF</title>
-     <link rel="stylesheet" href="{% static 'cif.css' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CIF</title>
+  <link rel="stylesheet" href="{% static 'cif.css' %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
 </head>
 <body>
-    <header>
-  <nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
+<header>
+  <nav class="navbar navbar-expand-lg bg-body-tertiary fixed-top" data-bs-theme="dark">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">NovaSoft</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
-        aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup">
         <span class="navbar-toggler-icon"></span>
       </button>
 
       <div class="collapse navbar-collapse" id="navbarNavAltMarkup">  
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-              aria-expanded="false">
-             CIF
-            </a>
+            <a class="nav-link dropdown-toggle active" href="#" role="button" data-bs-toggle="dropdown">CIF</a>
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="{% url 'costos' %}">Costos</a></li>
               <li><a class="dropdown-item" href="{% url 'estados' %}">Estados financieros</a></li>
@@ -37,45 +33,153 @@
     </div>
   </nav>
 </header>
-    <body>
-        <h2 class="titulo-cif">Costos indirectos de fabricacion</h2>
-       
-        <div class="tabla-cif">
-            <table class="table">
-    <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">First</th>
-      <th scope="col">Last</th>
-      <th scope="col">Handle</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row">1</th>
-      <td>Mark</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>Jacob</td>
-      <td>Thornton</td>
-      <td>@fat</td>
-    </tr>
-    <tr class="table-success">
-      <th scope="row">3</th>
-      <td colspan="2">Larry the Bird</td>
-      <td>@twitter</td>
-    </tr>
-  </tbody>
-</table>
+
+<main class="container mt-nav pb-5">
+  <h2 class="titulo-cif">Costos indirectos de fabricación</h2>
+
+  <!-- Formulario: registrar CIF (nombre + monto) -->
+  <section class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="mb-3">Agregar CIF</h5>
+      <form method="post" class="row g-3">
+        {% csrf_token %}
+        <div class="col-sm-8">
+          <label class="form-label">Nombre del CIF</label>
+          <input class="form-control" type="text" name="nombre" placeholder="Ej.: Recibo de agua potable" required>
         </div>
-        
-    </body>
-    <footer>
-         <p class="texto-footer">NovaSoft &copy; 2025</p>
-    </footer>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <div class="col-sm-4">
+          <label class="form-label">Monto (USD)</label>
+          <input class="form-control" type="number" step="0.01" min="0" name="monto" placeholder="0.00" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Notas (opcional)</label>
+          <input class="form-control" type="text" name="notas" placeholder="Detalle opcional">
+        </div>
+        <div class="col-12 d-flex justify-content-end gap-2">
+          <button class="btn btn-primary" type="submit">Guardar CIF</button>
+          <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Tabla: todos los CIF -->
+  <section class="card shadow-sm mb-5">
+    <div class="card-body">
+      <h5 class="mb-3">Listado de CIF</h5>
+      <div class="table-responsive">
+        <table class="table align-middle table-striped">
+          <thead class="table-light">
+            <tr>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Notas</th>
+              <th class="text-end">Monto (USD)</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if cifs and cifs|length > 0 %}
+              {% for r in cifs %}
+              <tr>
+                <td class="mono">{{ r.codigo }}</td>
+                <td class="text-truncate" style="max-width:420px" title="{{ r.nombre }}">{{ r.nombre }}</td>
+                <td class="text-truncate" style="max-width:360px" title="{{ r.notas }}">{{ r.notas }}</td>
+                <td class="text-end mono">{{ r.monto|floatformat:2 }}</td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalEdit{{ r.id }}">Editar</button>
+                  <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalDel{{ r.id }}">Eliminar</button>
+                </td>
+              </tr>
+
+              <!-- Modal EDIT -->
+              <div class="modal fade" id="modalEdit{{ r.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                  <div class="modal-content">
+                    <form method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="update">
+                      <input type="hidden" name="id" value="{{ r.id }}">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Editar CIF</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="row g-3">
+                          <div class="col-sm-8">
+                            <label class="form-label">Nombre del CIF</label>
+                            <input class="form-control" name="nombre" value="{{ r.nombre }}" required>
+                          </div>
+                          <div class="col-sm-4">
+                            <label class="form-label">Monto (USD)</label>
+                            <input class="form-control" type="number" step="0.01" min="0" name="monto" value="{{ r.monto }}">
+                          </div>
+                          <div class="col-12">
+                            <label class="form-label">Notas (opcional)</label>
+                            <input class="form-control" name="notas" value="{{ r.notas }}">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button class="btn btn-primary" type="submit">Guardar cambios</button>
+                        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Modal DELETE -->
+              <div class="modal fade" id="modalDel{{ r.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content">
+                    <form method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete">
+                      <input type="hidden" name="id" value="{{ r.id }}">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Eliminar CIF</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                      </div>
+                      <div class="modal-body">
+                        <p>¿Eliminar <strong>{{ r.nombre }}</strong> por <strong>USD {{ r.monto|floatformat:2 }}</strong>?</p>
+                        <small class="text-muted">Esta acción es permanente.</small>
+                      </div>
+                      <div class="modal-footer">
+                        <button class="btn btn-danger" type="submit">Eliminar</button>
+                        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted">No hay registros de CIF.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+          <tfoot>
+            <tr class="table-light">
+              <th colspan="3" class="text-end">TOTAL</th>
+              <th class="text-end mono">
+                {% if total_cif %}{{ total_cif|floatformat:2 }}{% else %}$0.00{% endif %}
+              </th>
+              <th></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p class="texto-footer">NovaSoft &copy; 2025</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

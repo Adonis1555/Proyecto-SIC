@@ -1,5 +1,22 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1; 
+  padding: 50px;
+}
+
 footer {
-  position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
@@ -16,9 +33,11 @@ footer p {
   margin-top: 15px;
 }
 
-.tabla-resultados{
-    width: 50%;
+.tabla-resultado{
+    width:70%;
     margin: auto;
+    border-collapse: collapse;
+    margin-bottom: 35px;
 }
 .titulo-resultado{
     text-align: center;

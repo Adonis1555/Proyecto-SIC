@@ -1,5 +1,23 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+
+main {
+  flex: 1; 
+  padding: 50px;
+}
+
 footer {
-  position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
@@ -17,8 +35,10 @@ footer p {
 }
 
 .tabla-mayor{
-    width: 50%;
+    width: 70%;
     margin: auto;
+    border-collapse: collapse;
+    margin-bottom: 35px;
 }
 .titulo-mayor{
     text-align: center;
@@ -28,4 +48,40 @@ footer p {
     width: 50%;
     margin:auto;
     padding:20px;
+}
+
+.columna-descripcion {
+  max-width: 300px;
+  overflow-wrap: break-word;
+}
+
+.cierre-button {
+    background-color: #444;  
+    color: #fff;           
+    padding: 10px 20px;         
+    border: none;               
+    border-radius: 8px;         
+    font-size: 16px;          
+    font-weight: bold;
+    cursor: pointer;            
+    transition: background-color 0.3s, transform 0.2s; 
+    max-height: 50px;
+}
+
+.cierre-button:hover {
+    background-color: #555;  
+    transform: scale(1.05);     
+}
+
+.container{
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  align-items: center;
+  justify-items: center;
+  margin-bottom: 25px;
+}
+.select-container{
+  width: 60%;
+  padding: 0;
+
 }

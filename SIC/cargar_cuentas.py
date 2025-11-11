@@ -9,63 +9,74 @@ from SIC.models import Cuenta
 def cargar_catalogo():
     cuentas = [
         # --- ACTIVO ---
-        ("1", "Activo", 0,0,0,None),
-        ("11", "Corriente", 0,0,0,"1"),
-        ("1101", "Caja", 0,0,0,"11"),
-        ("1102", "Bancos", 0,0,0,"11"),
-        ("1103", "Cuentas por cobrar", 0,0,0,"11"),
-        ("1104", "Préstamos a empleados", 0,0,0,"11"),
-        ("1105", "Anticipo a empleados", 0,0,0,"11"),
-        ("1106", "Deudores varios", 0,0,0,"11"),
-        ("1107", "Inventario", 0,0,0,"11"),
-        ("1108", "IVA crédito fiscal", 0,0,0,"11"),
-        ("1109", "Software en proceso", 0,0,0,"11"),
-        ("12", "Activos no corrientes", 0,0,0,"1"),
-        ("1201", "Equipos de cómputo", 0,0,0,"12"),
-        ("1202", "Mobiliario y equipo de oficina", 0,0,0,"12"),
-        ("1203", "Licencia y software adquirido", 0,0,0,"12"),
+        ("1", "Activo", 0, 0, 0, None, True),
+        ("11", "Activo Corriente", 0, 0, 0, "1", True),
+        ("1101", "Caja", 0, 0, 0, "11", False),
+        ("1102", "Bancos", 0, 0, 0, "11", False),
+        ("1103", "Cuentas por cobrar", 0, 0, 0, "11", False),
+        ("1104", "Deudores varios", 0, 0, 0, "11", False),
+        ("1105", "Inventario de suministros", 0, 0, 0, "11", False),
+        ("1106", "IVA crédito fiscal", 0, 0, 0, "11", True),
+        ("1107", "Software en proceso", 0, 0, 0, "11", False),
+        ("1108", "Depreciación acumulada de equipos de cómputo", 0, 0, 0, "11", True),
+        ("1109", "Depreciación acumulada de mobiliario", 0, 0, 0, "11", True),
+        ("1110", "Depreciación acumulada de equipo de oficina", 0, 0, 0, "11", True),
+        ("1111", "Depreciación acumulada de sistemas de seguridad", 0, 0, 0, "11", True),
+
+        ("12", "Activos no corrientes", 0, 0, 0, "1", True),
+        ("1201", "Equipos de cómputo", 0, 0, 0, "12", True),
+        ("1202", "Mobiliario", 0, 0, 0, "12", True),
+        ("1203", "Equipo de oficina", 0, 0, 0, "12", True),
+        ("1204", "Licencia y software adquirido", 0, 0, 0, "12", False),
 
         # --- PASIVO ---
-        ("2", "Pasivo", 0,0,0,None),
-        ("21", "Corriente", 0,0,0,"2"),
-        ("2101", "Cuentas por pagar", 0,0,0,"21"),
-        ("2102", "Alquiler", 0,0,0,"21"),
-        ("2103", "Documentos por pagar", 0,0,0,"21"),
-        ("2104", "ISSS", 0,0,0,"21"),
-        ("2105", "AFP", 0,0,0,"21"),
-        ("2106", "INCAF", 0,0,0,"21"),
-        ("2107", "Aguinaldo", 0,0,0,"21"),
-        ("2108", "Vacaciones", 0,0,0,"21"),
-        ("2109", "Servicios por pagar", 0,0,0,"21"),
-        ("2110", "IVA débito fiscal", 0,0,0,"21"),
-        ("22", "No corriente", 0,0,0,"2"),
-        ("2201", "Préstamos a largo plazo", 0,0,0,"22"),
+        ("2", "Pasivo", 0, 0, 0, None, True),
+        ("21", "Pasivo Corriente", 0, 0, 0, "2", True),
+        ("2101", "Cuentas por pagar", 0, 0, 0, "21", False),
+        ("2102", "Alquiler por pagar", 0, 0, 0, "21", False),
+        ("2103", "Documentos por pagar", 0, 0, 0, "21", False),
+        ("2104", "ISSS por pagar", 0, 0, 0, "21", True),
+        ("2105", "AFP por pagar", 0, 0, 0, "21", True),
+        ("2106", "INCAF por pagar", 0, 0, 0, "21", True),
+        ("2107", "Aguinaldo por pagar", 0, 0, 0, "21", True),
+        ("2108", "Vacaciones por pagar", 0, 0, 0, "21", True),
+        ("2109", "Septimo Dia por Pagar", 0, 0, 0, "21", True),
+        ("2110", "Servicios por pagar", 0, 0, 0, "21", False),
+        ("2111", "IVA débito fiscal", 0, 0, 0, "21", True),
+        ("22", "Pasivo No corriente", 0, 0, 0, "2", True),
+        ("2201", "Préstamos a largo plazo", 0, 0, 0, "22", False),
 
         # --- PATRIMONIO ---
-        ("3", "Patrimonio", 0,0,0,None),
-        ("31", "Capital contable", 0,0,0,"3"),
-        ("3101", "Capital social", 0,0,0,"31"),
-        ("3102", "Reserva legal", 0,0,0,"31"),
-        ("3103", "Pérdidas y ganancias", 0,0,0,"31"),
+        ("3", "Patrimonio", 0, 0, 0, None, True),
+        ("31", "Capital contable", 0, 0, 0, "3", True),
+        ("3101", "Capital social", 0, 0, 0, "31", True),
+        ("3102", "Reserva legal", 0, 0, 0, "31", True),
+        ("3103", "Pérdidas y ganancias", 0, 0, 0, "31", True),
 
-        # --- RESULTADOS ACREEDORAS ---
-        ("4", "Cuentas de resultados acreedoras", 0,0,0,None),
-        ("401", "Ventas", 0,0,0,"4"),
-        ("402", "Descuentos sobre compras", 0,0,0,"4"),
-        ("403", "Devoluciones sobre compras", 0,0,0,"4"),
+        # --- CUENTAS DE RESULTADOS ---
+        ("4", "Cuentas de resultados", 0, 0, 0, None, True),
+        ("41", "Variación entre costo estimado y real", 0, 0, 0, "4", True),
 
-        # --- RESULTADOS DEUDORAS ---
-        ("5", "Cuentas de resultados deudoras", 0,0,0,None),
-        ("501", "Compras", 0,0,0,"5"),
-        ("502", "Gastos sobre compras", 0,0,0,"5"),
-        ("503", "Descuentos sobre ventas", 0,0,0,"5"),
-        ("504", "Devoluciones sobre ventas", 0,0,0,"5"),
-        ("505", "Gasto de administración", 0,0,0,"5"),
-        ("506", "Gasto de venta", 0,0,0,"5"),
-        ("507", "Otros gastos", 0,0,0,"5"),
+        # --- CUENTAS DE RESULTADOS ACREEDORAS ---
+        ("5", "Cuentas de resultados acreedoras", 0, 0, 0, None, True),
+        ("501", "Ventas", 0, 0, 0, "5", False),
+        ("502", "Servicios de mantenimiento y soporte", 0, 0, 0, "5", False),
+        ("503", "Asesorías técnicas y capacitación", 0, 0, 0, "5", False),
+
+        # --- CUENTAS DE RESULTADOS DEUDORAS ---
+        ("6", "Cuentas de resultados deudoras", 0, 0, 0, None, True),
+        ("601", "Costo estimado", 0, 0, 0, "6", False),
+        ("602", "Descuentos sobre ventas", 0, 0, 0, "6", False),
+        ("603", "Devoluciones sobre ventas", 0, 0, 0, "6", False),
+        ("604", "Gasto de administración", 0, 0, 0, "6", False),
+        ("607", "Gasto de venta", 0, 0, 0, "6", False),
+        ("608", "Otros gastos", 0, 0, 0, "6", False),
+        ("609", "Gasto por depreciación de equipo de cómputo", 0, 0, 0, "6", True),
+        ("610", "Gasto por depreciación de equipo de oficina", 0, 0, 0, "6", True),
+        ("612", "Gasto por depreciación de mobiliario", 0, 0, 0, "6", True),
+        ("613", "Gasto por depreciación de sistemas de seguridad", 0, 0, 0, "6", True),
     ]
-
-    for codigo, nombre, saldo, debe, haber, padre_codigo in cuentas:
+    for codigo, nombre, saldo, debe, haber, padre_codigo,automatica in cuentas:
         padre = None
         if padre_codigo:
             padre = Cuenta.objects.filter(codigo=padre_codigo).first()
@@ -78,23 +89,34 @@ def cargar_catalogo():
                 "cuenta_padre": padre,
                 "saldo": saldo,
                 "debe": debe,
-                "haber": haber
+                "haber": haber,
+                "automatica":automatica
             }
         )
-
-        if creada:
-            print(f"Creada: {codigo} - {nombre}")
+        if not creada:
+            cuenta.nombre = nombre
+            cuenta.tipo = determinar_tipo(codigo)
+            cuenta.cuenta_padre = padre
+            cuenta.saldo = saldo
+            cuenta.debe = debe
+            cuenta.haber = haber
+            cuenta.automatica = automatica
+            cuenta.save(update_fields=["nombre", "tipo", "cuenta_padre", "saldo", "debe", "haber", "automatica"])
+            print(f"Actualizada: {codigo} - {nombre}")
         else:
-            print(f"Ya existe: {codigo}")
-
+            print(f"Creada: {codigo} - {nombre}")
 def determinar_tipo(codigo):
-    if codigo.startswith("1"): return "ACT"
-    if codigo.startswith("2"): return "PAS"
-    if codigo.startswith("3"): return "PAT"
-    if codigo.startswith("4"): return "ING"
-    if codigo.startswith("5"): return "GAS"
+    if codigo.startswith("1"): return "ACT"  # Activo
+    if codigo.startswith("2"): return "PAS"  # Pasivo
+    if codigo.startswith("3"): return "CAP"  # Capital (lo cambie de PAT a CAP)
+    
+    # --- ESTA ES LA CORRECCIÓN ---
+    # (Los códigos '4' eran de 'Resultados', un título, así que los saltamos)
+    if codigo.startswith("5"): return "ING"  # Ingresos (Ventas)
+    if codigo.startswith("6"): return "GAS"  # Gastos (Costos, Admin, etc.)
+    
+    # Si es el 4 (título) o cualquier otro, no es relevante para el E.R.
     return "OTR"
-
 if __name__ == "__main__":
     cargar_catalogo()
     print("Catálogo contable cargado correctamente.")

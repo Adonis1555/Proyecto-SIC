@@ -1,3 +1,20 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1; 
+  padding: 50px;
+}
 .formulario-transaccion{
     display:grid;
     grid-template-columns: repeat(2,1fr);
@@ -9,13 +26,15 @@
     align-items: center;
     
 }
+main{
+  padding:50px;
+  margin-top: 70px;
+}
 
 .lado-derecho {
     display: grid;
     grid-template-rows: 1fr, 1fr;
 }
-
-
 
 .botones-guardar-iva {
     display: flex;
@@ -41,7 +60,6 @@
 }
 
 footer {
-  position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
@@ -77,4 +95,9 @@ input:focus {
   border-color: #0d6efd;
   outline: 0;
   box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.columna-descripcion {
+  max-width: 300px;
+  overflow-wrap: break-word;
 }
