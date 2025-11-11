@@ -14,6 +14,7 @@ import json
 from django.db import connection
 from django.db.models.functions import Coalesce
 from django.urls import reverse
+from django.db.models import DecimalField, Value
 
 def calcular_costo_real_empleado(salario_nominal):
     """
@@ -209,68 +210,66 @@ def transacciones(request):
         'ultimo_dia': ultimo_dia
     })
 
-def EstadoCapital(request):
-    
-    # 1. Obtener todos los periodos cerrados para el menú desplegable
-    periodos = Periodo.objects.filter(cerrado=True).order_by('-fecha_inicio')
-    
-    # 2. Definir variables por defecto
-    periodo_seleccionado = None
-    cuentas_capital = []         # Cuentas tipo CAP (Capital Social, etc.)
-    utilidad_periodo = Decimal('0.00')  # La "Utilidad/Pérdida"
-    capital_final = Decimal('0.00')     # El resultado final
 
-    # 3. Verificar si el usuario seleccionó un periodo (via GET)
+def EstadoCapital(request):
+    """
+    Genera el Estado de Capital:
+    - Muestra solo las cuentas de tipo 'CAP'
+    - Excluye la cuenta 3103 (Pérdidas y Ganancias)
+    - Agrupa las cuentas igual que el Balance General
+    - Evita duplicaciones
+    """
+
+    # 1️⃣ Obtener periodos cerrados
+    periodos = Periodo.objects.filter(cerrado=True).order_by('-fecha_inicio')
+
+    periodo_seleccionado = None
+    cuentas_capital = []
+    total_capital = Decimal('0.00')
+
+    # 2️⃣ Verificar si se seleccionó un periodo
     periodo_id = request.GET.get('periodo')
     if periodo_id:
         try:
             periodo_seleccionado = Periodo.objects.get(id=periodo_id)
-            
-            # 4. Obtener las cuentas de Capital (Capital Social, Reservas) de la Balanza
-            cuentas_capital = BalanceComprobacion.objects.filter(
-                periodo=periodo_seleccionado,
-                cuenta__tipo='CAP'  # Filtramos solo las cuentas tipo Capital
-            ).select_related('cuenta')
 
-            # 5. REUTILIZAR LA LÓGICA de 'resultados' para calcular la Utilidad/Pérdida
-            #    (Total Ingresos (Haber) - Total Gastos (Debe))
-            
-            total_ingresos = BalanceComprobacion.objects.filter(
-                periodo=periodo_seleccionado,
-                cuenta__tipo='ING'
-            ).aggregate(total=Sum('haber'))['total'] or Decimal('0.00')
-            
-            total_gastos = BalanceComprobacion.objects.filter(
-                periodo=periodo_seleccionado,
-                cuenta__tipo='GAS'
-            ).aggregate(total=Sum('debe'))['total'] or Decimal('0.00')
+            # 3️⃣ Agrupar cuentas tipo 'CAP' (excluyendo padres y PyG)
+            cuentas = (
+                BalanceComprobacion.objects.filter(
+                    periodo=periodo_seleccionado,
+                    cuenta__tipo='CAP'
+                )
+                .exclude(cuenta__cuenta_padre__isnull=True)
+                .exclude(cuenta__codigo='3103')
+                .values('cuenta__codigo', 'cuenta__nombre')
+                .annotate(
+                    total_debe=Sum('debe'),
+                    total_haber=Sum('haber')
+                )
+                .order_by('cuenta__codigo')
+            )
 
-            utilidad_periodo = total_ingresos - total_gastos
-            
-            # 6. Calcular el Capital Final
-            # (Capital Final = Suma de saldos de cuentas CAP + Utilidad)
-            
-            # Sumamos los saldos de las cuentas de capital (usualmente solo Haber)
-            total_capital_haber = cuentas_capital.aggregate(total=Sum('haber'))['total'] or Decimal('0.00')
-            total_capital_debe = cuentas_capital.aggregate(total=Sum('debe'))['total'] or Decimal('0.00')
-            
-            saldo_cuentas_cap = total_capital_haber - total_capital_debe
-            
-            # Sumamos la utilidad del periodo
-            capital_final = saldo_cuentas_cap + utilidad_periodo
+            # 4️⃣ Calcular el saldo neto por cuenta
+            for c in cuentas:
+                saldo = c['total_haber'] - c['total_debe']
+                cuentas_capital.append({
+                    'codigo': c['cuenta__codigo'],
+                    'nombre': c['cuenta__nombre'],
+                    'saldo': saldo
+                })
+                total_capital += saldo
 
         except Periodo.DoesNotExist:
             periodo_seleccionado = None
 
-    # 7. Enviar todo al contexto
+    # 5️⃣ Enviar al template
     contexto = {
         'periodos': periodos,
         'periodo_seleccionado': periodo_seleccionado,
-        'cuentas_capital': cuentas_capital,    # Lista de cuentas CAP
-        'utilidad_periodo': utilidad_periodo,  # El resultado (ING - GAS)
-        'capital_final': capital_final,        # El total final
+        'cuentas_capital': cuentas_capital,
+        'total_capital': total_capital,
     }
-    
+
     return render(request, 'EstadoCapital.html', contexto)
 
 def BalanceC(request):
@@ -466,15 +465,18 @@ def libroMayor(request):
     if periodo_id:
         # Mostrar transacciones de un periodo cerrado
         transacciones_list = Transaccion.objects.filter(periodo_id=periodo_id).order_by('-fecha')
+    elif periodo_abierto:
+        # Mostrar transacciones del periodo abierto
+        transacciones_list = Transaccion.objects.filter(periodo=periodo_abierto).order_by('-fecha')
     else:
-        # Mostrar transacciones del periodo en curso (abierto)
-        transacciones_list = Transaccion.objects.filter(periodo=periodo_abierto).order_by('-fecha') if periodo_abierto else []
+        # No hay periodo abierto ni periodo seleccionado → mostrar todas las transacciones
+        transacciones_list = Transaccion.objects.all().order_by('-fecha')
 
-    # ✅ Calcular totales siempre (independiente del if)
+    # Totales
     total_debe = sum(Decimal(t.monto) for t in transacciones_list if t.tipo == 'Debe')
     total_haber = sum(Decimal(t.monto) for t in transacciones_list if t.tipo == 'Haber')
 
-    # Periodos para el selector
+    # Periodos para selector
     periodos = Periodo.objects.filter(cerrado=True).order_by('-fecha_inicio')
 
     # Periodo seleccionado
@@ -518,171 +520,175 @@ def estimacion(request):
 @transaction.atomic
 def cerrar_periodo_view(request):
     """
-    CIERRE DE PERÍODO (Versión "v7" - Lógica de Saldos Netos)
-    
-    1. Calcula el Saldo Neto (Debe-Haber o Haber-Debe) de CADA cuenta en SIC_cuenta.
-    2. Guarda esa "foto" (el Saldo Neto) en BalanceComprobacion.
-    3. Resetea SÓLO las cuentas de ING/GAS (excepto las de Costeo de Proyectos).
-    4. Mueve el resultado (Utilidad/Pérdida) a la cuenta de Capital PyG.
+    Cierre de período contable (v8):
+    - No resetea la cuenta de costo estimado.
+    - Suma la cuenta de variación a PyG.
+    - Solo salda ING, GAS, PyG y Variación.
+    - Aplica lógica dependiente del lado contable.
     """
-    if request.method != "POST":
-        # Lógica GET
-        periodos = Periodo.objects.all().order_by('-fecha_inicio')
-        return render(request, 'EstadosFinancieros.html', {
-            'periodos': periodos
-        })
-
-    # --- INICIA LÓGICA POST ---
-    
-    # 1. Marcar el período actual como cerrado
-    periodo_abierto = Periodo.objects.filter(cerrado=False).order_by('-fecha_inicio').first()
-    
-    if not periodo_abierto:
-        messages.error(request, "No hay ningún período abierto para cerrar.")
-        return redirect('transacciones')
+    if request.method == "POST":
+        # --- 1️⃣ Identificar o crear período a cerrar ---
+        periodo_abierto = Periodo.objects.filter(cerrado=False).order_by('-fecha_inicio').first()
+ 
         
-    fecha_base = periodo_abierto.fecha_inicio
-    ultimo_dia = monthrange(fecha_base.year, fecha_base.month)[1]
-    periodo_abierto.fecha_fin = fecha_base.replace(day=ultimo_dia)
-    periodo_abierto.cerrado = True
-    periodo_abierto.nombre = f"Cierre {fecha_base.strftime('%B %Y')}"
-    periodo_abierto.save()
-    periodo_cerrado = periodo_abierto
-    print(f"--- CERRANDO PERÍODO: {periodo_cerrado.nombre} ---")
-
-    # --- 2. CALCULAR EL RESULTADO (LEYENDO DE 'SIC_cuenta') ---
-    
-    # ¡CORRECCIÓN! Excluimos las cuentas de Costeo de Proyectos del resultado
-    # ya que ellas se manejan por separado en la vista 'transacciones'.
-    cuentas_a_excluir_del_resultado = [
-        "Costo estimado",
-        "Variación entre costo estimado y real",
-        "Software en proceso",
-        "Gasto de administración",
-        "Gasto de venta"
-    ]
-    
-    cuentas_ingreso = Cuenta.objects.filter(
-        tipo='ING', automatica=False
-    ).exclude(nombre__in=cuentas_a_excluir_del_resultado)
-    
-    cuentas_gasto = Cuenta.objects.filter(
-        tipo='GAS', automatica=False
-    ).exclude(nombre__in=cuentas_a_excluir_del_resultado)
-    
-    total_ingresos = cuentas_ingreso.aggregate(
-        total=Sum(Coalesce(F('haber'), Decimal('0.00')))
-    )['total'] or Decimal('0.00')
-    
-    total_gastos = cuentas_gasto.aggregate(
-        total=Sum(Coalesce(F('debe'), Decimal('0.00')))
-    )['total'] or Decimal('0.00')
-    
-    # (Ya no incluimos la 'Variación' aquí, porque se maneja por proyecto)
-    resultado_del_periodo = total_ingresos - total_gastos
-    print(f"Cierre (Solo Gastos Generales): Ingresos {total_ingresos}, Gastos {total_gastos}, Resultado {resultado_del_periodo}")
-
-    # --- 3. BUCLE ÚNICO: Calcular Saldo Neto, Guardar Snapshot Y LUEGO Resetear ---
-    
-    try:
-        cuenta_pyg = Cuenta.objects.get(codigo='3103') # 'Pérdidas y Ganancias'
-    except Cuenta.DoesNotExist:
-        messages.error(request, "Error Crítico: No se encontró la cuenta '3103'.")
-        raise Exception("Falta la cuenta 3103")
-
-    # Lista de cuentas que SÍ se resetean
-    cuentas_a_resetear = [
-        # (Añade aquí SÓLO las cuentas de ING/GAS que NO sean de Costeo)
-        # Por ejemplo:
-        "Gasto por depreciación de equipo de cómputo",
-        "Gasto por depreciación de equipo de oficina",
-        "Gasto por depreciación de mobiliario",
-        "Gasto por depreciación de sistemas de seguridad",
-        "Ventas",
-        "Servicios de mantenimiento y soporte",
-        "Asesorías técnicas y capacitación",
-        "Descuentos sobre ventas",
-        "Devoluciones sobre ventas",
-        "Otros gastos",
-    ]
-
-    for cuenta in Cuenta.objects.all():
-        # a. Leemos los saldos "en vivo" de SIC_cuenta
-        saldo_debe_vivo = cuenta.debe or Decimal('0.00')
-        saldo_haber_vivo = cuenta.haber or Decimal('0.00')
-        
-        # b. --- ¡CORRECCIÓN! TOTALIZAMOS LOS SALDOS ---
-        bc_debe_neto = Decimal('0.00')
-        bc_haber_neto = Decimal('0.00')
-
-        if cuenta.tipo in ['ACT', 'GAS']:
-            # Naturaleza Deudora (Debe - Haber)
-            saldo_final = saldo_debe_vivo - saldo_haber_vivo
-            if saldo_final >= 0:
-                bc_debe_neto = saldo_final
-            else:
-                bc_haber_neto = -saldo_final # Saldo acreedor (ej. depreciación acumulada)
+        if periodo_abierto:
+            fecha_base = periodo_abierto.fecha_inicio
+            ultimo_dia = monthrange(fecha_base.year, fecha_base.month)[1]
+            periodo_abierto.fecha_fin = fecha_base.replace(day=ultimo_dia)
+            periodo_abierto.cerrado = True
+            periodo_abierto.nombre = f"Cierre {fecha_base.strftime('%B %Y')}"
+            periodo_abierto.save()
+            periodo_cerrado = periodo_abierto
+            transacciones_a_cerrar = Transaccion.objects.filter(periodo=periodo_abierto)
         else:
-            # Naturaleza Acreedora (PAS, CAP, ING) (Haber - Debe)
-            saldo_final = saldo_haber_vivo - saldo_debe_vivo
-            if saldo_final >= 0:
-                bc_haber_neto = saldo_final
-            else:
-                bc_debe_neto = -saldo_final # Saldo deudor
-
-        # c. Ajustamos el snapshot de PyG ANTES de guardarlo
-        if cuenta.id == cuenta_pyg.id:
-            if resultado_del_periodo > 0: # Ganancia
-                bc_haber_neto += resultado_del_periodo
-            elif resultado_del_periodo < 0: # Pérdida
-                bc_debe_neto -= resultado_del_periodo # (menos por menos = más)
+            fecha_base = timezone.now().date()
+            ultimo_dia = monthrange(fecha_base.year, fecha_base.month)[1]
+            periodo_cerrado = Periodo.objects.create(
+                nombre=f"Cierre {fecha_base.strftime('%B %Y')}",
+                fecha_inicio=fecha_base.replace(day=1),
+                fecha_fin=fecha_base.replace(day=ultimo_dia),
+                cerrado=True
+            )
+            transacciones_a_cerrar = Transaccion.objects.filter(periodo__isnull=True)
+            total_debe_periodo = transacciones_a_cerrar.filter(tipo='Debe').aggregate(
+             total=Sum('monto')
+             )['total'] or Decimal('0.00')
+             
+            total_haber_periodo = transacciones_a_cerrar.filter(tipo='Haber').aggregate(
+                total=Sum('monto')
+            )['total'] or Decimal('0.00')
         
-        # d. Guardamos el "Snapshot" (EL SALDO NETO) en BalanceComprobacion
-        BalanceComprobacion.objects.create(
+        # 🔹 VALIDACIÓN 1: Que existan transacciones
+        if not transacciones_a_cerrar.exists():
+            messages.error(
+                request,
+                "Error: No hay transacciones en el período. No se puede cerrar el período."
+            )
+            return redirect('transacciones')
+        
+        # 🔹 VALIDACIÓN 2: Que las transacciones estén balanceadas
+        if total_debe_periodo != total_haber_periodo:
+            diferencia = total_debe_periodo - total_haber_periodo
+            messages.error(
+                request,
+                f"Error: Las transacciones del período no están balanceadas. "
+                f"Diferencia (Debe - Haber): ${diferencia:,.2f}. "
+                "No se puede cerrar el período."
+            )
+            return redirect('transacciones')
+
+        # --- 2️⃣ Cálculo de Ingresos y Gastos + Variación ---
+        cuentas_ingreso = Cuenta.objects.filter(tipo='ING', automatica=False)
+        cuentas_gasto = Cuenta.objects.filter(tipo='GAS', automatica=False)
+
+        total_ingresos = cuentas_ingreso.aggregate(
+            total=Sum(Coalesce(F('haber'), Value(0), output_field=DecimalField(max_digits=15, decimal_places=2)))
+        )['total'] or Decimal('0.00')
+        
+        total_gastos = cuentas_gasto.aggregate(
+            total=Sum(Coalesce(F('debe'), Value(0), output_field=DecimalField(max_digits=15, decimal_places=2)))
+        )['total'] or Decimal('0.00')
+
+        # Variación entre costo estimado y real (si existe)
+        try:
+            cuenta_variacion = Cuenta.objects.get(nombre__icontains="variación entre costo estimado y real")
+            total_ingresos += cuenta_variacion.haber or 0
+            total_gastos += cuenta_variacion.debe or 0
+        except Cuenta.DoesNotExist:
+            cuenta_variacion = None
+
+        resultado_del_periodo = total_ingresos - total_gastos
+
+        # --- 3️⃣ Obtener cuentas clave ---
+        cuenta_pyg = Cuenta.objects.get(codigo='3103')  # Pérdidas y Ganancias
+        cuenta_capital = Cuenta.objects.filter(codigo='3101').first()
+        cuenta_reserva = Cuenta.objects.filter(codigo='3102').first()
+
+        # --- 4️⃣ Guardar snapshot de todas las cuentas ---
+        for cuenta in Cuenta.objects.all():
+            saldo_debe = cuenta.debe or 0
+            saldo_haber = cuenta.haber or 0
+
+            # Netear
+            if saldo_debe > saldo_haber:
+                debe_final = saldo_debe - saldo_haber
+                haber_final = 0
+            elif saldo_haber > saldo_debe:
+                haber_final = saldo_haber - saldo_debe
+                debe_final = 0
+            else:
+                debe_final = haber_final = 0
+
+            BalanceComprobacion.objects.update_or_create(
+                periodo=periodo_cerrado,
+                cuenta=cuenta,
+                defaults={'debe': debe_final, 'haber': haber_final}
+            )
+
+            # --- 5️⃣ Reset solo de ING, GAS, PyG y Variación ---
+            if cuenta.tipo in ['ING', 'GAS'] or cuenta == cuenta_pyg or cuenta == cuenta_variacion:
+                # NO resetear costo estimado
+                if "costo estimado" not in cuenta.nombre.lower():
+                    cuenta.debe = 0
+                    cuenta.haber = 0
+                    cuenta.save(update_fields=['debe', 'haber'])
+
+        # --- 6️⃣ Aplicar resultado a PyG ---
+        if resultado_del_periodo > 0:  # utilidad
+            cuenta_pyg.haber = (cuenta_pyg.haber or 0) + resultado_del_periodo
+            cuenta_pyg.debe = 0
+        elif resultado_del_periodo < 0:  # pérdida
+            cuenta_pyg.debe = (cuenta_pyg.debe or 0) + abs(resultado_del_periodo)
+            cuenta_pyg.haber = 0
+        else:
+            cuenta_pyg.debe = cuenta_pyg.haber = 0
+
+        BalanceComprobacion.objects.update_or_create(
             periodo=periodo_cerrado,
-            cuenta=cuenta,
-            debe=bc_debe_neto,
-            haber=bc_haber_neto
+            cuenta=cuenta_pyg,
+            defaults={'debe': cuenta_pyg.debe, 'haber': cuenta_pyg.haber}
+        )
+        cuenta_pyg.save(update_fields=['debe', 'haber'])
+
+        # --- 7️⃣ Distribución de resultados en capital y reserva ---
+        if resultado_del_periodo != 0 and cuenta_capital and cuenta_reserva:
+            reserva = resultado_del_periodo * Decimal('0.20')
+            capital = resultado_del_periodo * Decimal('0.80')
+
+            cuenta_reserva.haber += max(reserva, 0)
+            cuenta_capital.haber += max(capital, 0)
+            cuenta_capital.save()
+            cuenta_reserva.save()
+
+        # --- 8️⃣ Cerrar transacciones ---
+        transacciones_a_cerrar.update(periodo=periodo_cerrado)
+
+        # --- 9️⃣ Crear nuevo período ---
+        primer_dia_sig = (fecha_base.replace(day=1) + timezone.timedelta(days=32)).replace(day=1)
+        ultimo_dia_sig = monthrange(primer_dia_sig.year, primer_dia_sig.month)[1]
+        nuevo_periodo = Periodo.objects.create(
+            nombre=f"Periodo {primer_dia_sig.strftime('%B %Y')}",
+            fecha_inicio=primer_dia_sig,
+            fecha_fin=primer_dia_sig.replace(day=ultimo_dia_sig),
+            cerrado=False
         )
 
-        # e. --- ¡CORRECCIÓN! Reseteamos/Actualizamos SIC_cuenta ---
-        
-        # Solo reseteamos las cuentas de la lista 'cuentas_a_resetear'
-        if cuenta.nombre in cuentas_a_resetear:
-            cuenta.debe = Decimal('0.00')
-            cuenta.haber = Decimal('0.00')
-            cuenta.save(update_fields=['debe', 'haber'])
-        
-        elif cuenta.id == cuenta_pyg.id:
-            # Traspasamos el resultado (solo de gastos generales) a la cuenta PyG
-            if resultado_del_periodo > 0: # Ganancia
-                cuenta.haber = Coalesce(F('haber'), Decimal('0.00')) + resultado_del_periodo
-                cuenta.save(update_fields=['haber'])
-            elif resultado_del_periodo < 0: # Pérdida
-                cuenta.debe = Coalesce(F('debe'), Decimal('0.00')) - resultado_del_periodo
-                cuenta.save(update_fields=['debe'])
-        
-        # ¡IMPORTANTE! Las cuentas de Costeo (Costo estimado, Gasto Admin, etc.)
-        # NO se tocan y sus saldos "en vivo" se mantienen.
+        # Traspasar solo ACT, PAS y CAP
+        for cuenta in Cuenta.objects.filter(tipo__in=['ACT', 'PAS', 'CAP']):
+            BalanceComprobacion.objects.create(
+                periodo=nuevo_periodo,
+                cuenta=cuenta,
+                debe=cuenta.debe or 0,
+                haber=cuenta.haber or 0
+            )
 
-    # 7. Mover las transacciones al período cerrado
-    Transaccion.objects.filter(periodo=periodo_abierto).update(periodo=periodo_cerrado)
-    Transaccion.objects.filter(periodo__isnull=True).update(periodo=periodo_cerrado)
-    
-    # 8. Creamos el nuevo periodo abierto
-    primer_dia_siguiente_mes = (fecha_base.replace(day=1) + timezone.timedelta(days=32)).replace(day=1)
-    ultimo_dia_siguiente_mes = monthrange(primer_dia_siguiente_mes.year, primer_dia_siguiente_mes.month)[1]
+        messages.success(request, f"✅ Cierre completado. Resultado del período: ${resultado_del_periodo:,.2f}")
+        return redirect(f"{reverse('comprobacion')}?periodo={periodo_cerrado.id}")
 
-    Periodo.objects.create(
-        nombre=f"Periodo {primer_dia_siguiente_mes.strftime('%B %Y')}",
-        fecha_inicio=primer_dia_siguiente_mes,
-        fecha_fin=primer_dia_siguiente_mes.replace(day=ultimo_dia_siguiente_mes),
-        cerrado=False
-    )
-    
-    messages.success(request, f"Período {periodo_cerrado.nombre} cerrado. Resultado del período: ${resultado_del_periodo:,.2f}")
-    
-    return redirect(f"{reverse('comprobacion')}?periodo={periodo_cerrado.id}")
+    else:
+        periodos = Periodo.objects.all().order_by('-fecha_inicio')
+        return render(request, 'EstadosFinancieros.html', {'periodos': periodos})
+
 # =========================
 # CIF: CRUD
 # =========================
