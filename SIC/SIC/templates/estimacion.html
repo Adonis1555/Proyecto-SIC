@@ -1,206 +1,652 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Estimación de Costos • Puntos de Función</title>
-  <link rel="stylesheet" href="estimacion.css" />
+  {% load static %}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Estimación de proyecto • IFPUG</title>
+
+  <link rel="stylesheet" href="{% static 'BalanceG.css' %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+  <style>
+    :root{ --page-max:1300px; --footer-h:38px; }
+    main.wrap{ max-width:var(--page-max); margin:80px auto 0; padding:1rem 1.25rem calc(var(--footer-h) + 2rem); }
+    .card{ border-radius:.75rem; overflow:hidden; }
+    .mono{ font-variant-numeric: tabular-nums; font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; }
+    .sticky-actions{ position:sticky; bottom:calc(var(--footer-h) + 8px); z-index:5; background:#fff; border-top:1px solid #e9ecef; border-bottom:1px solid #e9ecef; border-bottom-left-radius:.5rem; border-bottom-right-radius:.5rem; box-shadow:0 4px 16px rgba(0,0,0,.06); padding:.75rem; }
+    .table-fixed thead th{ position:sticky; top:0; background:#f8f9fa; z-index:1; }
+    .h-300{ max-height:300px; overflow:auto; }
+    .w-120{ width:120px }
+    .smallmuted{ font-size:.875rem; color:#6c757d; }
+    @media (max-width:768px){ .sticky-actions{ position:static; } main.wrap{ padding-bottom:calc(var(--footer-h) + 1rem); } }
+  </style>
 </head>
+
 <body>
-  <header class="app-header">
-    <h1>Estimación de Costos del Proyecto</h1>
-    <p>Método: Puntos de Función (IFPUG)</p>
-  </header>
+<header>
+  <nav class="navbar navbar-expand-lg bg-body-tertiary fixed-top" data-bs-theme="dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">NovaSoft</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-  <main class="container">
-    <!-- === 1. Información del Proyecto === -->
-    <section class="card">
-      <h2>Información del Proyecto</h2>
-      <div class="grid cols-4 gap">
-        <label class="field">
-          <span>Nombre del proyecto</span>
-          <input name="proyecto" type="text" placeholder="Sistema Contable NovaSoft" />
-        </label>
-        <label class="field">
-          <span>Cliente</span>
-          <input name="cliente" type="text" placeholder="Contabilidad Global S.A." />
-        </label>
-        <label class="field">
-          <span>Responsable</span>
-          <input name="responsable" type="text" placeholder="Ing. Responsable" />
-        </label>
-        <label class="field">
-          <span>Fecha de estimación</span>
-          <input name="fecha" type="date" />
-        </label>
+      <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle active" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Estimación IFPUG
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'costos' %}">Costos</a></li>
+              <li><a class="dropdown-item" href="{% url 'estados' %}">Estados financieros</a></li>
+              <li><a class="dropdown-item" href="{% url 'transacciones' %}">Transacciones</a></li>
+              <li><a class="dropdown-item" href="{% url 'mayor' %}">Libro Mayor</a></li>
+              <li><a class="dropdown-item" href="{% url 'catalogo' %}">Catálogo de cuentas</a></li>
+            </ul>
+          </li>
+        </ul>
       </div>
-    </section>
+    </div>
+  </nav>
+</header>
 
-    <!-- === 2. Requerimientos / Puntos de Función === -->
-    <section class="card">
-      <div class="section-head">
-        <h2>Requerimientos (Puntos de Función)</h2>
-        <p class="muted">Capture por tipo: <strong>EI</strong> (Entradas), <strong>EO</strong> (Salidas), <strong>EQ</strong> (Consultas), <strong>ILF</strong> (Archivos lógicos internos), <strong>EIF</strong> (Archivos de interfaz externa).</p>
+<footer class="footer-fixed"><p>NovaSoft © 2025</p></footer>
+
+<main class="wrap">
+  {% if messages %}
+    <div style="position: sticky; top: 60px; z-index: 1050;">
+      {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  <h2 class="text-center fw-bold mb-4">Estimación de proyecto (IFPUG)</h2>
+
+  <section class="card shadow-sm mb-4">
+    <div class="card-header">Orden de fabricación</div>
+    <div class="card-body">
+      <form id="formMeta" class="row g-3">
+        {% csrf_token %}
+        <div class="col-md-4">
+          <label class="form-label">Código OP</label>
+          <input class="form-control" name="op_codigo" placeholder="OP-2025-001">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Cliente/Área solicitante</label>
+          <input class="form-control" name="cliente" placeholder="Nombre del cliente">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Nombre del proyecto</label>
+          <input class="form-control" name="proyecto" placeholder="Sistema X">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Descripción breve / alcance</label>
+          <input class="form-control" name="alcance" placeholder="Módulos, plataformas, integraciones...">
+        </div>
+      </form>
+      <div class="text-muted small mt-2">* Esta información se guardará junto a la estimación para trazar la OP.</div>
+    </div>
+  </section>
+
+  <section class="card shadow-sm mb-4" id="secModulos">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <div>
+        <span class="me-2">Identificación por módulos (pesos fijos)</span>
+        <small class="text-muted">EI=4 • EO=5 • EQ=4 • ILF=10 • EIF=5</small>
       </div>
-
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" id="addModulo">+ Agregar módulo</button>
+        <button class="btn btn-outline-secondary btn-sm" id="clearModulos">Limpiar todo</button>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0" id="tblModulos">
+          <thead class="table-light">
             <tr>
-              <th style="width:8rem">Código</th>
-              <th>Descripción</th>
-              <th style="width:7rem">Tipo</th>
-              <th style="width:7rem">DET</th>
-              <th style="width:7rem">FTR</th>
+              <th style="width:32%">Módulo</th>
+              <th class="text-end" style="width:9%">EI</th>
+              <th class="text-end" style="width:9%">EO</th>
+              <th class="text-end" style="width:9%">EQ</th>
+              <th class="text-end" style="width:9%">ILF</th>
+              <th class="text-end" style="width:9%">EIF</th>
+              <th class="text-end" style="width:15%">Subtotal UFP</th>
+              <th class="text-end" style="width:8%">Acciones</th>
             </tr>
           </thead>
-          <tbody id="pf-rows">
-            <!-- Filas de ejemplo (puedes duplicarlas en Django o con JS) -->
-            <tr>
-              <td><input name="cod[]" type="text" placeholder="R1" /></td>
-              <td><input name="desc[]" type="text" placeholder="Registrar transacciones" /></td>
-              <td>
-                <select name="tipo[]">
-                  <option>EI</option><option>EO</option><option>EQ</option>
-                  <option>ILF</option><option>EIF</option>
-                </select>
-              </td>
-              <td><input name="det[]" type="number" min="1" placeholder="DET" /></td>
-              <td><input name="ftr[]" type="number" min="0" placeholder="FTR" /></td>
+          <tbody></tbody>
+          <tfoot>
+            <tr class="table-light">
+              <th class="text-end">Totales</th>
+              <th class="text-end mono" id="tEI">0</th>
+              <th class="text-end mono" id="tEO">0</th>
+              <th class="text-end mono" id="tEQ">0</th>
+              <th class="text-end mono" id="tILF">0</th>
+              <th class="text-end mono" id="tEIF">0</th>
+              <th class="text-end mono" id="tUfp">0</th>
+              <th></th>
             </tr>
-            <tr>
-              <td><input name="cod[]" type="text" placeholder="R2" /></td>
-              <td><input name="desc[]" type="text" placeholder="Generar reportes" /></td>
-              <td>
-                <select name="tipo[]">
-                  <option>EI</option><option selected>EO</option><option>EQ</option>
-                  <option>ILF</option><option>EIF</option>
-                </select>
-              </td>
-              <td><input name="det[]" type="number" min="1" placeholder="DET" /></td>
-              <td><input name="ftr[]" type="number" min="0" placeholder="FTR" /></td>
-            </tr>
-          </tbody>
+          </tfoot>
         </table>
       </div>
+    </div>
+    <div class="card-footer d-flex flex-wrap gap-4">
+      <div>UFP transaccionales: <span class="mono fw-semibold" id="mUfpTrans">0</span></div>
+      <div>UFP datos: <span class="mono fw-semibold" id="mUfpDatos">0</span></div>
+      <div class="ms-auto small text-muted">* Los UFP se calculan con los pesos fijos por tipo.</div>
+    </div>
+  </section>
 
-      <div class="hint">
-        <p><strong>Nota:</strong> Las ponderaciones por complejidad (baja/media/alta) de cada tipo PF
-        se calculan según las tablas IFPUG usando <em>DET</em> y <em>FTR</em>. Este formulario
-        está listo para que el cálculo lo haga el backend (Django) o, si prefieres, JS en el cliente.</p>
+  <section class="card shadow-sm mb-4">
+    <div class="card-header">Ajuste por complejidad (GSC → VAF)</div>
+    <div class="card-body">
+      <div class="row g-3" id="gscFields"></div>
+      <div class="mt-3 small text-muted">
+        Cada característica se valora de 0 (no aplica) a 5 (influencia fuerte).<br>
+        Fórmula: <span class="mono">VAF = 0.65 + 0.01 × Σ(GSC)</span>
       </div>
-    </section>
+    </div>
+    <div class="card-footer d-flex flex-wrap gap-3">
+      <div>Σ GSC: <span class="mono" id="sumGsc">0</span></div>
+      <div>VAF: <span class="mono" id="vaf">0.65</span></div>
+      <div class="ms-auto">AFP (UFP × VAF): <strong class="mono" id="afp">0</strong></div>
+    </div>
+  </section>
 
-    <!-- === 3. Ajuste de Complejidad Técnica (VAF con 14 factores) === -->
-    <section class="card">
-      <h2>Ajuste de Complejidad Técnica (VAF)</h2>
-      <p class="muted">Valora cada factor entre 0 (no aplica) y 5 (influencia fuerte). Fórmula sugerida:
-        <code>VAF = 0.65 + 0.01 × ΣFI</code>, con 14 factores.</p>
+  <section class="card shadow-sm mb-4">
+    <div class="card-header">Equipo directo por roles (MOD) y CIF mensual</div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <div class="d-flex gap-2 align-items-end mb-2">
+            <div class="flex-grow-1">
+              <label class="form-label">Agregar rol</label>
+              <select id="rolSelect" class="form-select">
+                <option value="" selected disabled>Selecciona…</option>
+              </select>
+            </div>
+            <button id="btnAddRol" class="btn btn-primary">Agregar</button>
+            <button id="btnClearRoles" class="btn btn-outline-secondary">Limpiar</button>
+          </div>
 
-      <div class="grid cols-4 gap factors">
-        <!-- 14 factores clásicos IFPUG -->
-        <label class="field"><span>FI1. Comunicación de datos</span><input name="fi1" type="number" min="0" max="5" placeholder="0–5" /></label>
-        <label class="field"><span>FI2. Procesamiento distribuido</span><input name="fi2" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI3. Rendimiento</span><input name="fi3" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI4. Configuración fuertemente usada</span><input name="fi4" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI5. Transacciones online</span><input name="fi5" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI6. Entrada de datos online</span><input name="fi6" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI7. Eficiencia del usuario final</span><input name="fi7" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI8. Actualizaciones internas de archivos</span><input name="fi8" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI9. Complejidad de procesamiento</span><input name="fi9" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI10. Reusabilidad</span><input name="fi10" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI11. Facilidad de instalación</span><input name="fi11" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI12. Facilidad de operación</span><input name="fi12" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI13. Múltiples sitios</span><input name="fi13" type="number" min="0" max="5" /></label>
-        <label class="field"><span>FI14. Facilidad de cambio</span><input name="fi14" type="number" min="0" max="5" /></label>
+          <div class="h-300 table-responsive table-fixed">
+            <table class="table table-sm align-middle" id="tblRoles">
+              <thead class="table-light">
+                <tr>
+                  <th>Rol</th>
+                  <th class="text-end w-120">Cantidad</th>
+                  <th class="text-end w-120">MOD real c/u</th>
+                  <th class="text-end w-120">Subtotal</th>
+                  <th class="text-end w-120">Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr class="table-light">
+                  <th colspan="3" class="text-end">MOD mensual del equipo</th>
+                  <th class="text-end mono" id="modMensual">$0.00</th>
+                  <th></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="smallmuted mt-2">
+            * Cargos **únicos**: Líder técnico, Desarrollador senior, Tester QA, Admin. de servidores/BD, Especialista en seguridad.  
+            * **Desarrollador junior** puede repetirse hasta **6** veces.  
+            * No se muestran salarios nominales; se usa el **costo real mensual** por rol.
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="p-3 border rounded-3">
+            <div class="mb-3">
+              <label class="form-label">Horas por Punto de Función (H/FP)</label>
+              <input id="hrsFp" type="number" step="0.1" min="1" class="form-control" value="10">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">CIF mensual (USD)</label>
+              <input id="cifMensual" type="number" step="0.01" min="0" class="form-control" value="0" readonly>
+              <div class="form-text">Total de CIF cargado desde la base de datos.</div>
+            </div>
+
+            <div class="p-2 bg-light rounded-3">
+              <div class="d-flex justify-content-between"><span>FTE seleccionados (suma de cantidades)</span><strong class="mono" id="teamFte">0</strong></div>
+              <div class="d-flex justify-content-between"><span>Capacidad del equipo (h/mes)</span><strong class="mono" id="capMes">0</strong></div>
+              <div class="d-flex justify-content-between"><span>Duración (meses) = horas / (FTE × 176)</span><strong class="mono" id="duracionMes">0</strong></div>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
+  </section>
 
-      <div class="grid cols-3 gap">
-        <label class="field">
-          <span>Total FI (ΣFI)</span>
-          <input name="sum_fi" type="number" readonly placeholder="Calculado por servidor" />
-        </label>
-        <label class="field">
-          <span>VAF</span>
-          <input name="vaf" type="text" readonly placeholder="0.65 + 0.01×ΣFI" />
-        </label>
-        <label class="field">
-          <span>Puntos de función ajustados</span>
-          <input name="pf_ajustados" type="number" readonly placeholder="UFP × VAF" />
-        </label>
+  <section class="card shadow-sm mb-4">
+    <div class="card-header">Resumen y estimación</div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="p-3 border rounded-3">
+            <h6 class="mb-3">Tamaño funcional</h6>
+            <div class="d-flex justify-content-between"><span>UFP transaccionales</span><strong class="mono" id="sumUfpTrans">0</strong></div>
+            <div class="d-flex justify-content-between"><span>UFP datos</span><strong class="mono" id="sumUfpDatos">0</strong></div>
+            <hr class="my-2">
+            <div class="d-flex justify-content-between"><span>UFP totales</span><strong class="mono" id="ufpTotal">0</strong></div>
+            <div class="d-flex justify-content-between"><span>AFP (UFP × VAF)</span><strong class="mono" id="afp2">0</strong></div>
+          </div>
+          <div class="p-3 bg-light rounded-3 mt-3">
+            <div class="d-flex justify-content-between"><span>Esfuerzo (horas) = AFP × H/FP</span><strong class="mono" id="esfuerzoH">0</strong></div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="p-3 border rounded-3">
+            <h6 class="mb-3">Valor aproximado</h6>
+            <div class="d-flex justify-content-between"><span>MOD total (MOD mensual × meses)</span><strong class="mono" id="modTotal">$0.00</strong></div>
+            <div class="d-flex justify-content-between"><span>CIF total (CIF mensual × meses)</span><strong class="mono" id="cifTotal">$0.00</strong></div>
+            <hr class="my-2">
+            <div class="d-flex justify-content-between"><span>Costo base</span><strong class="mono" id="costoBase">$0.00</strong></div>
+            <div class="d-flex justify-content-between"><span>Ganancia (30%)</span><strong class="mono" id="ganancia">$0.00</strong></div>
+            <div class="d-flex justify-content-between h5 mt-2"><span>Precio sugerido</span><strong class="mono" id="precioSug">$0.00</strong></div>
+          </div>
+        </div>
       </div>
-    </section>
+    </div>
 
-    <!-- === 4. Parámetros de Costeo === -->
-    <section class="card">
-      <h2>Parámetros de Costeo</h2>
-      <div class="grid cols-4 gap">
-        <label class="field">
-          <span>Puntos de función sin ajuste (UFP)</span>
-          <input name="pf_sin_ajuste" type="number" placeholder="Ej. 40" />
-        </label>
-        <label class="field">
-          <span>Costo por PF (USD)</span>
-          <input name="costo_pf" type="number" step="0.01" placeholder="Ej. 200" />
-        </label>
-        <label class="field">
-          <span>Tarifa por hora (USD)</span>
-          <input name="tarifa_hora" type="number" step="0.01" placeholder="Ej. 25" />
-        </label>
-        <label class="field">
-          <span>Horas por PF</span>
-          <input name="horas_pf" type="number" step="0.1" placeholder="Ej. 2.5" />
-        </label>
-        <label class="field">
-          <span>% CIF sobre MOD</span>
-          <input name="porc_cif" type="number" step="0.01" placeholder="Ej. 13.12" />
-        </label>
-        <label class="field">
-          <span>Gastos administrativos (USD)</span>
-          <input name="gastos_admin" type="number" step="0.01" placeholder="Ej. 500" />
-        </label>
+    <div class="card-footer">
+      <div class="sticky-actions d-flex justify-content-end gap-2">
+        <form method="post" class="d-flex gap-2" id="formGuardar">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create_estimation">
+          <input type="hidden" name="payload" id="payload">
+          <button class="btn btn-outline-secondary" type="button" id="btnExport">Exportar JSON</button>
+          <button class="btn btn-success" type="submit" id="btnGuardar">Guardar estimación</button>
+        </form>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- === 5. Resumen de Cálculo === -->
-    <section class="card">
-      <h2>Resumen de Estimación</h2>
-      <div class="grid cols-3 gap">
-        <label class="field">
-          <span>Costo por PF</span>
-          <input name="res_costo_pf" type="text" readonly placeholder="PF ajustados × costo/PF" />
-        </label>
-        <label class="field">
-          <span>MOD (tarifa × horas)</span>
-          <input name="res_mod" type="text" readonly placeholder="Tarifa × (PF×horas/PF)" />
-        </label>
-        <label class="field">
-          <span>CIF aplicado</span>
-          <input name="res_cif" type="text" readonly placeholder="%CIF × MOD" />
-        </label>
-        <label class="field">
-          <span>Gastos administrativos</span>
-          <input name="res_admin" type="text" readonly placeholder="Monto fijo" />
-        </label>
-        <label class="field total">
-          <span>Costo total estimado</span>
-          <input name="res_total" type="text" readonly placeholder="Suma de componentes" />
-        </label>
-      </div>
+  <p class="small text-muted">
+    UFP por módulos con pesos fijos; VAF desde GSC. **44 h/semana ⇒ 176 h/mes/FTE**.  
+    Precio sugerido = (MOD total + CIF total) × 1.30.
+  </p>
+</main>
 
-      <div class="actions">
-        <!-- Estos botones no tienen JS aquí; úsalos como submit en Django -->
-        <button type="submit" class="btn primary">Guardar estimación</button>
-        <button type="reset" class="btn">Limpiar</button>
-      </div>
-      <p class="muted small">
-        * Los campos calculados se completan en el servidor (Django) o con JavaScript si decides habilitar cálculo en vivo.
-      </p>
-    </section>
-  </main>
+{{ roles_mod|json_script:"data-roles-mod" }}
+{{ total_cif|json_script:"data-total-cif" }}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-  <footer class="app-footer">
-    <small>© NovaSoft • Estimación por Puntos de Función (IFPUG)</small>
-  </footer>
+<script>
+/* ===== Util ===== */
+const fmtMoney = v => (isNaN(v)?0:v).toLocaleString('en-US',{style:'currency',currency:'USD'});
+const fmtNum   = v => (isNaN(v)?0:v).toLocaleString('en-US');
+const n        = s => Number((s||'0').toString().replaceAll(',',''));
+
+/* =================================================== */
+/* ===== ZONA 2: EL "LECTOR" (JS LEE LOS DATOS DEL PUENTE) ===== */
+/* =================================================== */
+let ROLES = [];
+let initialCif = 0;
+
+let rolesDataRaw = document.getElementById('data-roles-mod').textContent;
+let rolesData;
+
+try {
+    rolesData = JSON.parse(rolesDataRaw);
+
+    // Si el resultado es un string (doble parse necesario)
+    if (typeof rolesData === "string") {
+        rolesData = JSON.parse(rolesData);
+    }
+
+const AFP = 0.0775, AGUI = 0.041, ISSS = 0.075, ISSS_TOPE = 1000, SEPT = 4.3333, VAC_DIAS = 1.25, INCAF = 0.01;
+
+    // Mapea los datos de Django y CALCULA el costo real
+    ROLES = rolesData.map(r => {
+        // r.salario_real_mensual (del views.py) es el salario NOMINAL
+        const s = r.salario_real_mensual; 
+        
+        const afp  = s * AFP;
+        const isss = Math.min(s, ISSS_TOPE) * ISSS;
+        const sept = (s / 30) * SEPT;
+        const agui = s * AGUI;
+        const vac  = (s / 30) * VAC_DIAS;
+        const incf = s * INCAF;
+
+        // El costo real es el salario + todas las provisiones y costos patronales
+        const costoReal = s + afp + isss + sept + agui + vac + incf;
+        
+        return {
+            cargo: r.cargo,
+            real: costoReal, // <-- ¡Ahora sí es el costo real!
+            max: r.cargo === 'Desarrollador junior' ? 6 : 1 
+        };
+    });
+    
+    console.log("Roles con costo real calculado:", ROLES);
+
+    console.log("Roles cargados correctamente:", ROLES);
+
+} catch (e) {
+    console.error("Error al cargar roles desde Django:", e, rolesDataRaw);
+    alert("ERROR CRÍTICO: No se pudieron cargar los roles desde la base de datos.");
+}
+
+try {
+    // Lee el CIF total del "puente" (data-total-cif)
+    initialCif = JSON.parse(document.getElementById('data-total-cif').textContent);
+} catch (e) {
+    console.error("Error al cargar CIF desde Django:", e);
+    // No es crítico, podemos empezar con 0
+}
+/* --- FIN DEL LECTOR DE DATOS --- */
+
+
+/* ===== Módulos (pesos fijos) ===== */
+const W = { EI:4, EO:5, EQ:4, ILF:10, EIF:5 };
+const $modBody   = document.querySelector('#tblModulos tbody');
+const $addModulo = document.getElementById('addModulo');
+const $clearMods = document.getElementById('clearModulos');
+
+function rowModulo(nombre=''){
+  return `
+    <tr>
+      <td><input class="form-control form-control-sm name" placeholder="p. ej. Catálogo de cuentas" value="${nombre}"></td>
+      <td class="text-end"><input type="number" min="0" value="0" class="form-control form-control-sm text-end nEI"></td>
+      <td class="text-end"><input type="number" min="0" value="0" class="form-control form-control-sm text-end nEO"></td>
+      <td class="text-end"><input type="number" min="0" value="0" class="form-control form-control-sm text-end nEQ"></td>
+      <td class="text-end"><input type="number" min="0" value="0" class="form-control form-control-sm text-end nILF"></td>
+      <td class="text-end"><input type="number" min="0" value="0" class="form-control form-control-sm text-end nEIF"></td>
+      <td class="text-end mono subUfp">0</td>
+      <td class="text-end"><button class="btn btn-sm btn-outline-danger delM">Quitar</button></td>
+    </tr>`;
+}
+$addModulo.addEventListener('click', e=>{ e.preventDefault(); $modBody.insertAdjacentHTML('beforeend', rowModulo()); recalcModulos(); });
+$clearMods.addEventListener('click', e=>{ e.preventDefault(); $modBody.innerHTML=''; recalcModulos(); });
+document.addEventListener('click', e=>{ if(e.target.classList.contains('delM')){ e.preventDefault(); e.target.closest('tr').remove(); recalcModulos(); }});
+document.addEventListener('input', e=>{ if(e.target.closest('#tblModulos')) recalcModulos(); });
+
+function recalcModulos(){
+  let tEI=0,tEO=0,tEQ=0,tILF=0,tEIF=0;
+  $modBody.querySelectorAll('tr').forEach(tr=>{
+    const EI = parseInt(tr.querySelector('.nEI')?.value||'0');
+    const EO = parseInt(tr.querySelector('.nEO')?.value||'0');
+    const EQ = parseInt(tr.querySelector('.nEQ')?.value||'0');
+    const ILF= parseInt(tr.querySelector('.nILF')?.value||'0');
+    const EIF= parseInt(tr.querySelector('.nEIF')?.value||'0');
+    tEI+=EI; tEO+=EO; tEQ+=EQ; tILF+=ILF; tEIF+=EIF;
+    tr.querySelector('.subUfp').textContent = (EI*W.EI+EO*W.EO+EQ*W.EQ+ILF*W.ILF+EIF*W.EIF).toLocaleString('en-US');
+  });
+
+  const pEI=tEI*W.EI, pEO=tEO*W.EO, pEQ=tEQ*W.EQ, pILF=tILF*W.ILF, pEIF=tEIF*W.EIF;
+  const ufpTrans=pEI+pEO+pEQ, ufpDatos=pILF+pEIF, tUFP=ufpTrans+ufpDatos;
+
+  document.getElementById('tEI').textContent=tEI.toLocaleString('en-US');
+  document.getElementById('tEO').textContent=tEO.toLocaleString('en-US');
+  document.getElementById('tEQ').textContent=tEQ.toLocaleString('en-US');
+  document.getElementById('tILF').textContent=tILF.toLocaleString('en-US');
+  document.getElementById('tEIF').textContent=tEIF.toLocaleString('en-US');
+  document.getElementById('tUfp').textContent=tUFP.toLocaleString('en-US');
+
+  document.getElementById('mUfpTrans').textContent=ufpTrans.toLocaleString('en-US');
+  document.getElementById('mUfpDatos').textContent=ufpDatos.toLocaleString('en-US');
+
+  document.getElementById('sumUfpTrans').textContent=ufpTrans.toLocaleString('en-US');
+  document.getElementById('sumUfpDatos').textContent=ufpDatos.toLocaleString('en-US');
+  document.getElementById('ufpTotal').textContent=tUFP.toLocaleString('en-US');
+
+  recalcAFP(); // encadena AFP/esfuerzo
+}
+
+/* ===== GSC → VAF/AFP ===== */
+const GSC_LIST=[
+  "Comunicación de datos","Procesamiento distribuido","Rendimiento","Configuración hardware","Volumen de transacciones",
+  "Entrada de datos en línea","Eficiencia del usuario final","Actualización en línea","Procesos complejos",
+  "Reusabilidad","Facilidad de instalación","Facilidad de operación","Múltiples sitios","Facilidad de cambio"
+];
+const gscC=document.getElementById('gscFields');
+GSC_LIST.forEach((t,i)=>gscC.insertAdjacentHTML('beforeend',`
+  <div class="col-md-3">
+    <label class="form-label small">${i+1}. ${t}</label>
+    <input type="range" min="0" max="5" value="0" class="form-range gsc">
+    <div class="text-end mono small"><span class="gscv">0</span>/5</div>
+  </div>`));
+gscC.addEventListener('input',e=>{ if(e.target.classList.contains('gsc')){ e.target.parentElement.querySelector('.gscv').textContent=e.target.value; recalcAFP(); }});
+
+function recalcAFP(){
+  const ufpTotal=n(document.getElementById('ufpTotal').textContent);
+  let s=0; document.querySelectorAll('.gsc').forEach(r=>s+=parseInt(r.value||'0'));
+  const vaf=0.65+0.01*s;
+  document.getElementById('sumGsc').textContent=fmtNum(s);
+  document.getElementById('vaf').textContent=vaf.toFixed(2);
+  const afp=ufpTotal*vaf;
+  document.getElementById('afp').textContent=afp.toFixed(2);
+  document.getElementById('afp2').textContent=afp.toFixed(2);
+  recalcEstimacion();
+}
+
+/* ===== Equipo por roles (YA NO ESTÁ HARDCODEADO) ===== */
+const HRS_MES_FTE=176;
+
+/* (Se borró el 'const ROLES = [...]' que estaba aquí) */
+
+const rolSelect = document.getElementById('rolSelect');
+// ¡Esta lista 'ROLES' ahora viene del "Puente"!
+ROLES.forEach(r=>{
+  const opt = document.createElement('option');
+  opt.value = r.cargo;
+  opt.textContent = r.cargo;
+  rolSelect.appendChild(opt);
+});
+
+const tblRolesBody=document.querySelector('#tblRoles tbody');
+document.getElementById('btnAddRol').addEventListener('click', (e)=>{
+  e.preventDefault();
+  const cargo = rolSelect.value;
+  if(!cargo) return;
+
+  const cfg = ROLES.find(x=>x.cargo===cargo);
+  if(!cfg) return;
+
+  const ya = tblRolesBody.querySelector(`tr[data-cargo="${cargo}"]`);
+  if(ya){
+    if(cargo==='Desarrollador junior'){
+      const qtyEl = ya.querySelector('.rolQty');
+      const qty = Number(qtyEl.value||0);
+      if(qty < cfg.max){
+        qtyEl.value = qty + 1;
+      }
+    }else{
+      return;
+    }
+  }else{
+    const qty = cargo==='Desarrollador junior' ? 1 : 1;
+    const readonly = cargo==='Desarrollador junior' ? '' : 'readonly';
+    const hint = cargo==='Desarrollador junior' ? '(máx 6)' : '(único)';
+    tblRolesBody.insertAdjacentHTML('beforeend', `
+      <tr data-cargo="${cargo}" data-real="${cfg.real}">
+        <td>${cargo} <span class="smallmuted">${hint}</span></td>
+        <td class="text-end">
+          <input type="number" min="0" value="${qty}" class="form-control form-control-sm text-end rolQty w-120" ${readonly}>
+        </td>
+        <td class="text-end mono">${fmtMoney(cfg.real)}</td>
+        <td class="text-end mono rolSub">$0.00</td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-danger delRol">Quitar</button>
+        </td>
+      </tr>
+    `);
+  }
+  recalcEstimacion();
+});
+document.getElementById('btnClearRoles').addEventListener('click', (e)=>{
+  e.preventDefault(); tblRolesBody.innerHTML=''; recalcEstimacion();
+});
+document.addEventListener('click', e=>{
+  if(e.target.classList.contains('delRol')){
+    e.preventDefault();
+    e.target.closest('tr').remove();
+    recalcEstimacion();
+  }
+});
+document.addEventListener('input', e=>{
+  if(e.target.classList.contains('rolQty')){
+    const tr = e.target.closest('tr');
+    const cargo = tr?.dataset?.cargo || '';
+    const cfg = ROLES.find(x=>x.cargo===cargo);
+    if(cfg){
+      let v = Number(e.target.value||0);
+      if(cargo==='Desarrollador junior'){
+        v = Math.max(0, Math.min(cfg.max, v));
+      }else{
+        v = Math.min(1, Math.max(0, v));
+      }
+      e.target.value = v;
+    }
+    recalcEstimacion();
+  }
+});
+document.getElementById('hrsFp').addEventListener('input', recalcEstimacion);
+document.getElementById('cifMensual').addEventListener('input', recalcEstimacion);
+function recalcEstimacion(){
+  const afp = Number(document.getElementById('afp2').textContent || 0);
+  const hrsFp = Number(document.getElementById('hrsFp').value || 0);
+  const esfuerzoH = Math.max(0, afp * hrsFp);
+  document.getElementById('esfuerzoH').textContent = fmtNum(esfuerzoH.toFixed(1));
+  let fte=0, modMensual=0;
+  tblRolesBody.querySelectorAll('tr').forEach(tr=>{
+    const qty = Number(tr.querySelector('.rolQty')?.value||0);
+    const real = Number(tr.dataset.real||0);
+    const sub = qty * real;
+    tr.querySelector('.rolSub').textContent = fmtMoney(sub);
+    fte += qty;
+    modMensual += sub;
+  });
+  const capMes = fte * HRS_MES_FTE;
+  const meses  = (fte>0 && capMes>0) ? (esfuerzoH / capMes) : 0;
+  document.getElementById('teamFte').textContent = fmtNum(fte);
+  document.getElementById('capMes').textContent  = fmtNum(capMes);
+  document.getElementById('duracionMes').textContent = fmtNum(meses.toFixed(2));
+  document.getElementById('modMensual').textContent = fmtMoney(modMensual);
+  const cifMensual = Number(document.getElementById('cifMensual').value || 0);
+  const modTotal   = modMensual * meses;
+  const cifTotal   = cifMensual * meses;
+  const costoBase  = modTotal + cifTotal;
+  const ganancia   = costoBase * 0.30;
+  const precio     = costoBase + ganancia;
+  document.getElementById('modTotal').textContent  = fmtMoney(modTotal);
+  document.getElementById('cifTotal').textContent  = fmtMoney(cifTotal);
+  document.getElementById('costoBase').textContent = fmtMoney(costoBase);
+  document.getElementById('ganancia').textContent  = fmtMoney(ganancia);
+  document.getElementById('precioSug').textContent = fmtMoney(precio);
+}
+
+/* ===== Exportar / Guardar ===== */
+function buildPayload(){
+  const meta=Object.fromEntries(new FormData(document.getElementById('formMeta')).entries());
+  const modulos=[];
+  document.querySelectorAll('#tblModulos tbody tr').forEach(tr=>{
+    modulos.push({
+      modulo: tr.querySelector('.name')?.value||'',
+      EI:Number(tr.querySelector('.nEI')?.value||0),
+      EO:Number(tr.querySelector('.nEO')?.value||0),
+      EQ:Number(tr.querySelector('.nEQ')?.value||0),
+      ILF:Number(tr.querySelector('.nILF')?.value||0),
+      EIF:Number(tr.querySelector('.nEIF')?.value||0)
+    });
+  });
+  const totales_cf={
+    EI:n(document.getElementById('tEI').textContent),
+    EO:n(document.getElementById('tEO').textContent),
+    EQ:n(document.getElementById('tEQ').textContent),
+    ILF:n(document.getElementById('tILF').textContent),
+    EIF:n(document.getElementById('tEIF').textContent),
+    UFP:n(document.getElementById('tUfp').textContent)
+  };
+  const vaf=Number(document.getElementById('vaf').textContent);
+  const afp=Number(document.getElementById('afp2').textContent);
+  const horas_por_fp=Number(document.getElementById('hrsFp').value||0);
+  const esfuerzo_horas=n(document.getElementById('esfuerzoH').textContent);
+  const duracion_meses=Number(document.getElementById('duracionMes').textContent.replaceAll(',','')||0);
+  const cif_mensual=Number(document.getElementById('cifMensual').value||0);
+  const roles=[];
+  tblRolesBody.querySelectorAll('tr').forEach(tr=>{
+    roles.push({
+      cargo: tr.dataset.cargo,
+      salario_real_mensual: Number(tr.dataset.real||0),
+      cantidad: Number(tr.querySelector('.rolQty')?.value||0)
+    });
+  });
+  const mod_mensual = Number((document.getElementById('modMensual').textContent||'').replace(/[$,]/g,'')) || 0;
+  const costos = {
+    mod_total:   Number((document.getElementById('modTotal').textContent||'').replace(/[$,]/g,'')) || 0,
+    cif_total:   Number((document.getElementById('cifTotal').textContent||'').replace(/[$,]/g,'')) || 0,
+    costo_base:  Number((document.getElementById('costoBase').textContent||'').replace(/[$,]/g,'')) || 0,
+    ganancia_30: Number((document.getElementById('ganancia').textContent||'').replace(/[$,]/g,'')) || 0,
+    precio_sugerido: Number((document.getElementById('precioSug').textContent||'').replace(/[$,]/g,'')) || 0
+  };
+  return {
+    meta,
+    pesos_fijos: W,
+    modulos, totales_cf,
+    gsc_sum: n(document.getElementById('sumGsc').textContent),
+    vaf, afp, horas_por_fp,
+    equipo_roles: {
+      miembros: roles,
+      fte: n(document.getElementById('teamFte').textContent),
+      capacidad_h_mes: n(document.getElementById('capMes').textContent),
+      mod_mensual
+    },
+    esfuerzo_horas, duracion_meses,
+    cif_mensual, costos
+  };
+}
+
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  const payload=buildPayload();
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=(payload.meta?.op_codigo||'estimacion')+'.json'; a.click();
+});
+
+// --- LÓGICA DE GUARDADO ROBUSTA ---
+document.getElementById('formGuardar').addEventListener('submit', (e) => {
+    try {
+        const payload = buildPayload();
+        document.getElementById('payload').value = JSON.stringify(payload); // <-- Corregido (era payloadJson)
+        
+        if (payload.costos.costo_base <= 0) {
+            if (!confirm("El costo estimado es $0.00. ¿Deseas guardarlo de todos modos?")) {
+                e.preventDefault(); // Detiene el envío
+            }
+        }
+        // Si el costo es > 0, o si el usuario confirma, el formulario se envía.
+    } catch (error) {
+        e.preventDefault(); 
+        console.error("Error al construir el payload:", error);
+        alert("ERROR: No se pudieron construir los datos para guardar. Revisa la consola (F12) para más detalles.");
+    }
+});
+
+
+/* Seed: una fila de módulos para que no esté vacío */
+$modBody.insertAdjacentHTML('beforeend', rowModulo('Catálogo de cuentas'));
+
+/* ================================================ */
+/* ===== 3. ASIGNA EL CIF DE LA BASE DE DATOS    ===== */
+/* ================================================ */
+document.getElementById('cifMensual').value = initialCif;
+
+recalcModulos();
+
+</script>
+    <footer>
+         <p class="texto-footer">NovaSoft &copy; 2025</p>
+    </footer>
 </body>
 </html>

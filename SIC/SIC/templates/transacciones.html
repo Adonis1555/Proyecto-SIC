@@ -42,6 +42,16 @@
   </header>
 
   <main class="container mt-4">
+    {% if messages %}
+  <div style="position: sticky; top: 60px; z-index: 1050;">
+    {% for message in messages %}
+      <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
     <div class="ingreso-transaccion">
       <h1 class="titulo">NovaSoft</h1>
 
