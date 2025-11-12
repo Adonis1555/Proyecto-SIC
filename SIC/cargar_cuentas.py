@@ -11,8 +11,8 @@ def cargar_catalogo():
         # --- ACTIVO ---
         ("1", "Activo", 0, 0, 0, None, True),
         ("11", "Activo Corriente", 0, 0, 0, "1", True),
-        ("1101", "Caja", 0, 0, 0, "11", False),
-        ("1102", "Bancos", 0, 0, 0, "11", False),
+        ("1101", "Caja", 0, 5000, 0, "11", False),
+        ("1102", "Bancos", 0, 5000, 0, "11", False),
         ("1103", "Cuentas por cobrar", 0, 0, 0, "11", False),
         ("1104", "Deudores varios", 0, 0, 0, "11", False),
         ("1105", "Inventario de suministros", 0, 0, 0, "11", False),
@@ -49,8 +49,8 @@ def cargar_catalogo():
         # --- PATRIMONIO ---
         ("3", "Patrimonio", 0, 0, 0, None, True),
         ("31", "Capital contable", 0, 0, 0, "3", True),
-        ("3101", "Capital social", 0, 0, 0, "31", True),
-        ("3102", "Reserva legal", 0, 0, 0, "31", True),
+        ("3101", "Capital social", 0, 0, 8000, "31", True),
+        ("3102", "Reserva legal", 0, 0, 2000, "31", True),
         ("3103", "Pérdidas y ganancias", 0, 0, 0, "31", True),
 
         # --- CUENTAS DE RESULTADOS ---
