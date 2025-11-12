@@ -49,8 +49,8 @@ def cargar_catalogo():
         # --- PATRIMONIO ---
         ("3", "Patrimonio", 0, 0, 0, None, True),
         ("31", "Capital contable", 0, 0, 0, "3", True),
-        ("3101", "Capital social", 0, 0, 1000, "31", True),
-        ("3102", "Reserva legal", 0, 0, 200, "31", True),
+        ("3101", "Capital social", 0, 0, 0, "31", True),
+        ("3102", "Reserva legal", 0, 0, 0, "31", True),
         ("3103", "Pérdidas y ganancias", 0, 0, 0, "31", True),
 
         # --- CUENTAS DE RESULTADOS ---

@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from .models import Transaccion, Cuenta,Periodo,BalanceComprobacion,Cif,ModEmpleado
 from .forms import TransaccionForm
-from django.db.models import Sum, F,Q
+from django.db.models import Sum, F,Q, Case, When
 from django.db import connection, transaction
 from django.utils import timezone
 from decimal import Decimal
@@ -285,19 +285,20 @@ def BalanceC(request):
     else:
         periodo_seleccionado = periodos.first()
 
-    # --- CONSULTA CORREGIDA Y DEFINITIVA ---
+    # --- CONSULTA MODIFICADA ---
     if periodo_seleccionado:
-        # Muestra todo lo que está en el Balance...
         cierres = BalanceComprobacion.objects.filter(
             periodo=periodo_seleccionado
         ).exclude(
-            # ...EXCEPTO las cuentas que NO TIENEN PADRE
-            # (es decir, "Activo", "Pasivo", "Patrimonio", "Cuentas de resultados", etc.)
+            # Excluye las cuentas "raíz" (ej. "Activo", "Pasivo", etc.)
             cuenta__cuenta_padre_id__isnull=True
+        ).exclude(
+            # ¡NUEVO! Excluimos las cuentas de tipo Capital
+            cuenta__tipo='CAP' 
         ).order_by('cuenta__codigo')
     else:
         cierres = []
-    # --- FIN DE LA CORRECCIÓN ---
+    # --- FIN DE LA MODIFICACIÓN ---
 
     # Calcular totales solo si hay cierres
     if cierres:
@@ -516,7 +517,6 @@ def estimacion(request):
     return render(request, 'estimacion.html')
 
 
-# (Asegúrate de tener todos los imports: transaction, Sum, F, Coalesce, Cuenta, Periodo, BalanceComprobacion, etc.)
 @transaction.atomic
 def cerrar_periodo_view(request):
     """
@@ -529,7 +529,52 @@ def cerrar_periodo_view(request):
     if request.method == "POST":
         # --- 1️⃣ Identificar o crear período a cerrar ---
         periodo_abierto = Periodo.objects.filter(cerrado=False).order_by('-fecha_inicio').first()
- 
+        
+        if periodo_abierto:
+            # Transacciones del período abierto
+            transacciones_a_cerrar = Transaccion.objects.filter(periodo=periodo_abierto)
+            fecha_base = periodo_abierto.fecha_inicio
+        else:
+            # Transacciones "huérfanas" (sin período asignado)
+            transacciones_a_cerrar = Transaccion.objects.filter(periodo__isnull=True)
+            fecha_base = timezone.now().date()
+
+        VALOR_TIPO_DEBITO = 'Debe'
+        VALOR_TIPO_HABER = 'Haber'
+
+        saldos_periodo = transacciones_a_cerrar.aggregate(
+            total_debe=Sum(
+                Case(
+                    When(tipo=VALOR_TIPO_DEBITO, then=F('monto')),
+                    default=Value(0),
+                    output_field=DecimalField()
+                )
+            ),
+            total_haber=Sum(
+                Case(
+                    When(tipo=VALOR_TIPO_HABER, then=F('monto')),
+                    default=Value(0),
+                    output_field=DecimalField()
+                )
+            )
+        )
+        
+        total_debe_periodo = saldos_periodo['total_debe'] or Decimal('0.00')
+        total_haber_periodo = saldos_periodo['total_haber'] or Decimal('0.00')
+        
+        # Validación con tolerancia de 1 centavo
+        if abs(total_debe_periodo - total_haber_periodo) > Decimal('0.01'):
+            messages.error(
+                request, 
+                f"❌ Error: Las transacciones del período no están cuadradas. "
+                f"Total Debe: ${total_debe_periodo:,.2f}, "
+                f"Total Haber: ${total_haber_periodo:,.2f}. "
+                "El cierre no puede continuar."
+            )
+            # Volvemos a mostrar la página con el mensaje de error
+            periodos = Periodo.objects.all().order_by('-fecha_inicio')
+            return render(request, 'libroMayor.html', {'periodos': periodos})
+        periodo_abierto = Periodo.objects.filter(cerrado=False).order_by('-fecha_inicio').first()
         
         if periodo_abierto:
             fecha_base = periodo_abierto.fecha_inicio
@@ -550,32 +595,6 @@ def cerrar_periodo_view(request):
                 cerrado=True
             )
             transacciones_a_cerrar = Transaccion.objects.filter(periodo__isnull=True)
-            total_debe_periodo = transacciones_a_cerrar.filter(tipo='Debe').aggregate(
-             total=Sum('monto')
-             )['total'] or Decimal('0.00')
-             
-            total_haber_periodo = transacciones_a_cerrar.filter(tipo='Haber').aggregate(
-                total=Sum('monto')
-            )['total'] or Decimal('0.00')
-        
-        # 🔹 VALIDACIÓN 1: Que existan transacciones
-        if not transacciones_a_cerrar.exists():
-            messages.error(
-                request,
-                "Error: No hay transacciones en el período. No se puede cerrar el período."
-            )
-            return redirect('transacciones')
-        
-        # 🔹 VALIDACIÓN 2: Que las transacciones estén balanceadas
-        if total_debe_periodo != total_haber_periodo:
-            diferencia = total_debe_periodo - total_haber_periodo
-            messages.error(
-                request,
-                f"Error: Las transacciones del período no están balanceadas. "
-                f"Diferencia (Debe - Haber): ${diferencia:,.2f}. "
-                "No se puede cerrar el período."
-            )
-            return redirect('transacciones')
 
         # --- 2️⃣ Cálculo de Ingresos y Gastos + Variación ---
         cuentas_ingreso = Cuenta.objects.filter(tipo='ING', automatica=False)
@@ -688,6 +707,7 @@ def cerrar_periodo_view(request):
     else:
         periodos = Periodo.objects.all().order_by('-fecha_inicio')
         return render(request, 'EstadosFinancieros.html', {'periodos': periodos})
+
 
 # =========================
 # CIF: CRUD
