@@ -109,7 +109,6 @@
                 <option>Desarrollador senior</option>
                 <option>Desarrollador junior</option>
                 <option>Tester QA</option>
-                <option>Admin. de servidores/BD</option>
               </optgroup>
 
               <!-- Otros de apoyo (no únicos) -->
@@ -118,7 +117,6 @@
                 <option>Vendedor</option>
                 <option>Soporte/Atención al cliente</option>
                 <option>Diseñador gráfico</option>
-                <option>Especialista en seguridad</option>
               </optgroup>
             </select>
             <div class="form-text" id="cargoHint"></div>
@@ -172,7 +170,6 @@
               <th class="text-end nowrap">Salario</th>
               <th class="text-end nowrap">AFP</th>
               <th class="text-end nowrap">ISSS</th>
-              <th class="text-end nowrap">Séptimo</th>
               <th class="text-end nowrap">Aguinaldo</th>
               <th class="text-end nowrap">Vacaciones</th>
               <th class="text-end nowrap">INCAF</th>
@@ -190,7 +187,6 @@
                 <td class="text-end mono s-salario"></td>
                 <td class="text-end mono s-afp"></td>
                 <td class="text-end mono s-isss"></td>
-                <td class="text-end mono s-septimo"></td>
                 <td class="text-end mono s-aguinaldo"></td>
                 <td class="text-end mono s-vac"></td>
                 <td class="text-end mono s-incaf"></td>
@@ -279,7 +275,7 @@
 
       <div class="small text-muted mt-2">
         Reglas: AFP = 7.75% del salario; ISSS = 7.5% sobre base topada a $1,000;  
-        Séptimo = (salario/30) × 4.3333; Aguinaldo = 4.1% del salario;  
+        4.3333; Aguinaldo = 4.1% del salario;  
         Vacaciones = (salario/30) × 1.25; INCAF = 1% del salario.
       </div>
     </div>
@@ -326,13 +322,12 @@
       const vac  = (s / 30) * VAC_DIAS;
       const incf = s * INCAF;
 
-      const total = s + afp + isss + sept + agui + vac + incf;
+      const total = s + afp + isss + agui + vac + incf;
       totalGeneral += total;
 
       tr.querySelector('.s-salario').textContent  = fmt(s);
       tr.querySelector('.s-afp').textContent      = fmt(afp);
       tr.querySelector('.s-isss').textContent     = fmt(isss);
-      tr.querySelector('.s-septimo').textContent  = fmt(sept);
       tr.querySelector('.s-aguinaldo').textContent= fmt(agui);
       tr.querySelector('.s-vac').textContent      = fmt(vac);
       tr.querySelector('.s-incaf').textContent    = fmt(incf);

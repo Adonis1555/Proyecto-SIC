@@ -304,7 +304,7 @@ try {
         rolesData = JSON.parse(rolesData);
     }
 
-const AFP = 0.0775, AGUI = 0.041, ISSS = 0.075, ISSS_TOPE = 1000, SEPT = 4.3333, VAC_DIAS = 1.25, INCAF = 0.01;
+const AFP = 0.0775, AGUI = 0.041, ISSS = 0.075, ISSS_TOPE = 1000, VAC_DIAS = 1.25, INCAF = 0.01;
 
     // Mapea los datos de Django y CALCULA el costo real
     ROLES = rolesData.map(r => {
@@ -313,13 +313,12 @@ const AFP = 0.0775, AGUI = 0.041, ISSS = 0.075, ISSS_TOPE = 1000, SEPT = 4.3333,
         
         const afp  = s * AFP;
         const isss = Math.min(s, ISSS_TOPE) * ISSS;
-        const sept = (s / 30) * SEPT;
         const agui = s * AGUI;
         const vac  = (s / 30) * VAC_DIAS;
         const incf = s * INCAF;
 
         // El costo real es el salario + todas las provisiones y costos patronales
-        const costoReal = s + afp + isss + sept + agui + vac + incf;
+        const costoReal = s + afp + isss + agui + vac + incf;
         
         return {
             cargo: r.cargo,
