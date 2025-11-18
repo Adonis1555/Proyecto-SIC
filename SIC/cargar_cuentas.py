@@ -11,11 +11,11 @@ def cargar_catalogo():
         # --- ACTIVO ---
         ("1", "Activo", 0, 0, 0, None, True),
         ("11", "Activo Corriente", 0, 0, 0, "1", True),
-        ("1101", "Caja", 0, 5000, 0, "11", False),
-        ("1102", "Bancos", 0, 5000, 0, "11", False),
+        ("1101", "Caja", 0, 0, 0, "11", False),
+        ("1102", "Bancos", 0, 2300, 0, "11", False),
         ("1103", "Cuentas por cobrar", 0, 0, 0, "11", False),
         ("1104", "Deudores varios", 0, 0, 0, "11", False),
-        ("1105", "Inventario de suministros", 0, 0, 0, "11", False),
+        ("1105", "Inventario de suministros", 0, 0, 22700, "11", False),
         ("1106", "IVA crédito fiscal", 0, 0, 0, "11", True),
         ("1107", "Software en proceso", 0, 0, 0, "11", False),
         ("1108", "Depreciación acumulada de equipos de cómputo", 0, 0, 0, "11", True),
@@ -24,10 +24,12 @@ def cargar_catalogo():
         ("1111", "Depreciación acumulada de sistemas de seguridad", 0, 0, 0, "11", True),
 
         ("12", "Activos no corrientes", 0, 0, 0, "1", True),
-        ("1201", "Equipos de cómputo", 0, 0, 0, "12", True),
-        ("1202", "Mobiliario", 0, 0, 0, "12", True),
-        ("1203", "Equipo de oficina", 0, 0, 0, "12", True),
+        ("1201", "Equipos de cómputo", 0,12000, 0, "12", True),
+        ("1202", "Mobiliario", 0, 7000, 0, "12", True),
+        ("1203", "Equipo de oficina", 0, 2300, 0, "12", True),
         ("1204", "Licencia y software adquirido", 0, 0, 0, "12", False),
+        ("1205", "Sistemas de seguridad", 0, 1400, 0, "12", False),
+
 
         # --- PASIVO ---
         ("2", "Pasivo", 0, 0, 0, None, True),
@@ -49,8 +51,8 @@ def cargar_catalogo():
         # --- PATRIMONIO ---
         ("3", "Patrimonio", 0, 0, 0, None, True),
         ("31", "Capital contable", 0, 0, 0, "3", True),
-        ("3101", "Capital social", 0, 0, 8000, "31", True),
-        ("3102", "Reserva legal", 0, 0, 2000, "31", True),
+        ("3101", "Capital social", 0, 0, 1840, "31", True),
+        ("3102", "Reserva legal", 0, 0, 460, "31", True),
         ("3103", "Pérdidas y ganancias", 0, 0, 0, "31", True),
 
         # --- CUENTAS DE RESULTADOS ---

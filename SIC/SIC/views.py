@@ -27,8 +27,7 @@ def calcular_costo_real_empleado(salario_nominal):
     AFP = Decimal('0.0775')
     AGUI = Decimal('0.041')
     ISSS = Decimal('0.075')
-    ISSS_TOPE = Decimal('1000')
-    SEPT = Decimal('4.3333') # (s / 30) * 4.3333
+    ISSS_TOPE = Decimal('1000') # (s / 30) * 4.3333
     VAC_DIAS = Decimal('1.25') # (s / 30) * 1.25
     INCAF = Decimal('0.01')
     TREINTA = Decimal('30')
@@ -36,13 +35,12 @@ def calcular_costo_real_empleado(salario_nominal):
     # Cálculos de prestaciones
     afp  = s * AFP
     isss = min(s, ISSS_TOPE) * ISSS
-    sept = (s / TREINTA) * SEPT
     agui = s * AGUI
     vac  = (s / TREINTA) * VAC_DIAS
     incf = s * INCAF
 
     # Suma total (Costo Real)
-    costo_real = s + afp + isss + sept + agui + vac + incf
+    costo_real = s + afp + isss  + agui + vac + incf
     
     # Redondeamos a 2 decimales por si acaso
     return costo_real.quantize(Decimal('0.01'))
@@ -62,7 +60,7 @@ def transacciones(request):
     else:
         hoy = timezone.now().date()
         primer_dia = hoy.replace(day=1)
-        ultimo_dia = monthrange(hoy.year, hoy.month)[1]
+        ultimo_dia = monthrange(hoy.year, hoy.month)[1] 
 
     # ============================================================
     # POST → GUARDAR TRANSACCIÓN
@@ -96,49 +94,73 @@ def transacciones(request):
             # ============================================================
             # 🧮 ECUACIÓN CONTABLE → (BLOQUE ELIMINADO POR SER INCORRECTO)
             # ============================================================
-            # ¡ELIMINADO! Este bloque rompía la contabilidad.
-            # El capital NO se recalcula en cada transacción.
+            # (¡Correcto que esté eliminado!)
 
-            # ============================================================
-            # LÓGICA DE VARIACIÓN (CON CONTRAPARTIDA EN BANCOS)
-            # ============================================================
+
+            # ====================================================================
+            # --- LÓGICA DE COSTO (TU NUEVA IDEA - "CONSTANTE") ---
+            # (REEMPLAZA la lógica vieja de 'Variación vs Bancos')
+            # ====================================================================
+            
+            # Si la transacción es una VENTA (Ingreso en Haber)...
             if transaccion.cuenta.tipo == 'ING' and transaccion.tipo == 'Haber':
                 try:
-                    monto_venta = transaccion.monto
-                    cuenta_estimado = Cuenta.objects.get(nombre="Costo estimado")
-                    cuenta_variacion = Cuenta.objects.get(nombre="Variación entre costo estimado y real")
-                    cuenta_bancos = Cuenta.objects.get(nombre="Bancos")
-                    
-                    cuenta_estimado.refresh_from_db()
-                    costo_estimado_val = cuenta_estimado.debe or Decimal('0.00')
+                    # 1. Obtenemos la "constante" guardada en la cuenta Costo Estimado
+                    cuenta_costo = Cuenta.objects.get(nombre="Costo estimado")
+                    # (Usamos .saldo, que es donde 'estimacion_ifpug' (v25) lo guarda)
+                    costo_constante = cuenta_costo.saldo or Decimal('0.00')
 
-                    if monto_venta > costo_estimado_val:
-                        ganancia = monto_venta - costo_estimado_val
-                        cuenta_variacion.haber = Coalesce(F('haber'), Decimal('0.00')) + ganancia
-                        cuenta_variacion.save(update_fields=['haber'])
-                        cuenta_bancos.debe = Coalesce(F('debe'), Decimal('0.00')) + ganancia
-                        cuenta_bancos.save(update_fields=['debe'])
-                        messages.success(request, f"Venta registrada. Utilidad ${ganancia:,.2f}")
-                    elif costo_estimado_val > monto_venta:
-                        perdida = costo_estimado_val - monto_venta
-                        cuenta_variacion.debe = Coalesce(F('debe'), Decimal('0.00')) + perdida
-                        cuenta_variacion.save(update_fields=['debe'])
-                        cuenta_bancos.haber = Coalesce(F('haber'), Decimal('0.00')) + perdida
-                        cuenta_bancos.save(update_fields=['haber'])
-                        messages.success(request, f"Pérdida registrada: ${perdida:,.2f}")
+                    # 2. Obtenemos la contrapartida
+                    cuenta_software = Cuenta.objects.get(codigo="1107") # Software en proceso
 
+                    if costo_constante > 0:
+                        # 3. Registramos el Gasto (Debe) en el saldo "en vivo"
+                        cuenta_costo.debe = Coalesce(F('debe'), Decimal('0.00')) + costo_constante
+                        cuenta_costo.save(update_fields=['debe'])
+                        
+                        # 4. Registramos la Contrapartida (Haber) en el saldo "en vivo"
+                        cuenta_software.haber = Coalesce(F('haber'), Decimal('0.00')) + costo_constante
+                        cuenta_software.save(update_fields=['haber'])
+
+                        # 5. Creamos el historial de la transacción de costo
+                        Transaccion.objects.create(
+                            fecha=transaccion.fecha,
+                            cuenta=cuenta_costo,
+                            descripcion="Costo estimado automático por venta",
+                            monto=costo_constante,
+                            tipo='Debe',
+                            periodo=periodo_abierto,
+                            exento_iva=True
+                        )
+                        Transaccion.objects.create(
+                            fecha=transaccion.fecha,
+                            cuenta=cuenta_software,
+                            descripcion="Contrapartida Costo (Software en Proceso)",
+                            monto=costo_constante,
+                            tipo='Haber',
+                            periodo=periodo_abierto,
+                            exento_iva=True
+                        )
+                        
+                        messages.success(request, f"Venta registrada. Costo de ${costo_constante:,.2f} aplicado (Debe: Costo, Haber: Software).")
+                    else:
+                        messages.warning(request, "Venta registrada, pero el Costo Estimado (la 'constante') es CERO. El costo no fue aplicado.")
+
+                except Cuenta.DoesNotExist as e:
+                    messages.error(request, f"Error Crítico: No se encontró 'Costo estimado' (601) o 'Software en proceso' (1107). ({e}).")
                 except Exception as e:
-                    messages.error(request, f"Error en variación: {e}")
+                    messages.error(request, f"Error inesperado al aplicar el costo constante: {e}")
+
+            # ============================================================
+            # --- FIN LÓGICA DE COSTO ---
+            # ============================================================
+
 
             # ============================================================
             # LÓGICA DE IVA (SIN CAMBIOS, ES CORRECTA)
             # ============================================================
             if not transaccion.exento_iva and transaccion.cuenta.tipo in ['ACT', 'PAS']:
-                # ... (Tu lógica de IVA va aquí, sin cambios) ...
-                # (Asegúrate de que la lógica de F() esté aquí también
-                # para iva_cuenta.debe y iva_cuenta.haber)
                 
-                # (Copiando tu lógica de IVA...)
                 iva_rate = Decimal('0.13')
                 iva_monto = transaccion.monto * iva_rate
                 transaccion.monto = iva_monto + transaccion.monto
@@ -157,14 +179,16 @@ def transacciones(request):
                 if transaccion.tipo == 'Haber':
                     iva_cuenta = Cuenta.objects.get(codigo='1106') # IVA Crédito
                     tipo_iva = 'Debe'
+                    desc_iva = "Aplicando IVA (Crédito Fiscal)"
                 else:
                     iva_cuenta = Cuenta.objects.get(codigo='2111') # IVA Débito
                     tipo_iva = 'Haber'
+                    desc_iva = "Aplicando IVA (Débito Fiscal)"
 
                 Transaccion.objects.create(
                     fecha=transaccion.fecha,
                     cuenta=iva_cuenta,
-                    descripcion="IVA automático",
+                    descripcion=desc_iva,
                     monto=iva_monto,
                     tipo=tipo_iva,
                     periodo=periodo_abierto,
@@ -204,112 +228,62 @@ def transacciones(request):
         'ultimo_dia': ultimo_dia
     })
 
-def EstadoCapital(request):
-    """
-    Genera el Estado de Capital:
-    - Muestra solo las cuentas de tipo 'CAP'
-    - Excluye la cuenta 3103 (Pérdidas y Ganancias)
-    - Agrupa las cuentas igual que el Balance General
-    - Evita duplicaciones
-    """
-
-    # 1️⃣ Obtener periodos cerrados
-    periodos = Periodo.objects.filter(cerrado=True).order_by('-fecha_inicio')
-
-    periodo_seleccionado = None
-    cuentas_capital = []
-    total_capital = Decimal('0.00')
-
-    # 2️⃣ Verificar si se seleccionó un periodo
-    periodo_id = request.GET.get('periodo')
-    if periodo_id:
-        try:
-            periodo_seleccionado = Periodo.objects.get(id=periodo_id)
-
-            # 3️⃣ Agrupar cuentas tipo 'CAP' (excluyendo padres y PyG)
-            cuentas = (
-                BalanceComprobacion.objects.filter(
-                    periodo=periodo_seleccionado,
-                    cuenta__tipo='CAP'
-                )
-                .exclude(cuenta__cuenta_padre__isnull=True)
-                .exclude(cuenta__codigo='3103')
-                .values('cuenta__codigo', 'cuenta__nombre')
-                .annotate(
-                    total_debe=Sum('debe'),
-                    total_haber=Sum('haber')
-                )
-                .order_by('cuenta__codigo')
-            )
-
-            # 4️⃣ Calcular el saldo neto por cuenta
-            for c in cuentas:
-                saldo = c['total_haber'] - c['total_debe']
-                cuentas_capital.append({
-                    'codigo': c['cuenta__codigo'],
-                    'nombre': c['cuenta__nombre'],
-                    'saldo': saldo
-                })
-                total_capital += saldo
-
-        except Periodo.DoesNotExist:
-            periodo_seleccionado = None
-
-    # 5️⃣ Enviar al template
-    contexto = {
-        'periodos': periodos,
-        'periodo_seleccionado': periodo_seleccionado,
-        'cuentas_capital': cuentas_capital,
-        'total_capital': total_capital,
-    }
-
-    return render(request, 'EstadoCapital.html', contexto)
-
 def BalanceC(request):
     periodos = Periodo.objects.filter(cerrado=True).order_by('-fecha_inicio')
-
-    # Obtener el periodo seleccionado desde GET
+    
+    # --- Lógica de selección de período (con default) ---
+    periodo_seleccionado = None
     periodo_id = request.GET.get('periodo')
     if periodo_id:
         try:
             periodo_seleccionado = Periodo.objects.get(id=periodo_id, cerrado=True)
         except Periodo.DoesNotExist:
-            periodo_seleccionado = periodos.first()
-    else:
+            pass 
+    if not periodo_seleccionado and periodos.exists():
         periodo_seleccionado = periodos.first()
+    # --- Fin Lógica de selección ---
 
-    # --- CONSULTA MODIFICADA ---
+    cierres = []
+    total_debe = Decimal('0.00')
+    total_haber = Decimal('0.00')
+
     if periodo_seleccionado:
+        
+        # --- Cuentas a Ocultar ---
+        codigos_a_ocultar = [
+            '3103', # Pérdidas y Ganancias
+            '609', '610', '612', '613', # Gastos de Depreciación
+            '1108', '1109', '1110', '1111', '41'# Depreciación Acumulada
+        ]
+        
         cierres = BalanceComprobacion.objects.filter(
             periodo=periodo_seleccionado
         ).exclude(
-            # Excluye las cuentas "raíz" (ej. "Activo", "Pasivo", etc.)
+            # Excluye las cuentas "raíz"
             cuenta__cuenta_padre_id__isnull=True
         ).exclude(
-            # 🔴 Excluir cuenta de Pérdidas y Ganancias
-            cuenta__codigo='3103'
+            # ¡AQUÍ! Excluye PyG y todas las de Depreciación
+            cuenta__codigo__in=codigos_a_ocultar
         ).order_by('cuenta__codigo')
-    else:
-        cierres = []
-    # --- FIN DE LA MODIFICACIÓN ---
 
-    # Calcular totales solo si hay cierres
-    if cierres:
-        totales = cierres.aggregate(
-            total_debe=Sum('debe'),
-            total_haber=Sum('haber')
+        # ¡OJO! Los totales seguirán desbalanceados
+        # porque estamos quitando cuentas
+        totales_filtrados = cierres.aggregate(
+            sum_debe=Sum('debe'),
+            sum_haber=Sum('haber')
         )
-    else:
-        totales = {'total_debe': 0, 'total_haber': 0}
+        total_debe = totales_filtrados.get('sum_debe') or Decimal('0.00')
+        total_haber = totales_filtrados.get('sum_haber') or Decimal('0.00')
 
-    return render(request, 'BalanceC.html', {
+    contexto = {
         'periodos': periodos,
         'periodo_seleccionado': periodo_seleccionado,
         'cierres': cierres,
-        'total_debe': totales['total_debe'],
-        'total_haber': totales['total_haber']
-    })
+        'total_debe': total_debe,
+        'total_haber': total_haber
+    }
 
+    return render(request, 'BalanceC.html', contexto)
 def BalanceG(request):
     periodos = Periodo.objects.filter(cerrado=True).order_by('-fecha_inicio')
     periodo_id = request.GET.get('periodo')
@@ -477,7 +451,41 @@ def catalogo(request):
     })
 
 def cif(request):
-    return render(request, 'cif.html')
+    """
+    Pantalla de CIF:
+      - Crear:  POST action=create  con nombre, monto, notas
+      - Editar: POST action=update  con id, nombre, monto, notas
+      - Borrar: POST action=delete  con id
+    """
+    if request.method == "POST":
+        action = (request.POST.get("action") or "create").strip()
+
+        if action == "create":
+            nombre = (request.POST.get("nombre") or "").strip()
+            monto = Decimal(request.POST.get("monto") or "0")
+            notas = (request.POST.get("notas") or "").strip()
+            if nombre and monto >= 0:
+                Cif.objects.create(nombre=nombre, monto=monto, notas=notas)
+            return redirect("cif")
+
+        if action == "update":
+            obj = get_object_or_404(Cif, pk=request.POST.get("id"))
+            obj.nombre = (request.POST.get("nombre") or "").strip()
+            obj.monto = Decimal(request.POST.get("monto") or "0")
+            obj.notas = (request.POST.get("notas") or "").strip()
+            obj.save()
+            return redirect("cif")
+
+        if action == "delete":
+            obj = get_object_or_404(Cif, pk=request.POST.get("id"))
+            obj.delete()
+            return redirect("cif")
+
+    # GET: listar y totalizar
+    cifs = Cif.objects.order_by("id")
+    total = cifs.aggregate(total=Sum("monto"))["total"] or Decimal("0")
+    return render(request, "cif.html", {"cifs": cifs, "total_cif": total})
+
 
 
 def estimacion(request):
@@ -487,16 +495,15 @@ def estimacion(request):
 @transaction.atomic
 def cerrar_periodo_view(request):
     """
-    Cierre de período contable (v13 - Lógica de Hoja de Trabajo):
-    - ...
-    - Pone la Ganancia en el DEBE de PyG (para la foto del cierre).
-    - Pone la Pérdida en el HABER de PyG (para la foto del cierre).
-    - La Apertura (Paso 10) distribuye y resetea PyG correctamente.
+    Cierre de período contable (v24 - Arrastre de PyG Corregido):
+    - PASO 7:   Calcula el resultado del mes y lo NETEA con el saldo arrastrado de PyG.
+    - PASO 10:  Calcula la distribución (Capital/Reserva) basándose
+                en la UTILIDAD NETA FINAL (no solo la del mes).
+    - El resto de la lógica (v22) se mantiene.
     """
     if request.method == "POST":
         
         # --- 1️⃣ Identificar período y transacciones ---
-        # ... (Sin cambios) ...
         periodo_abierto = Periodo.objects.filter(cerrado=False).order_by('-fecha_inicio').first()
         if periodo_abierto:
             transacciones_a_cerrar = Transaccion.objects.filter(periodo=periodo_abierto)
@@ -505,8 +512,7 @@ def cerrar_periodo_view(request):
             transacciones_a_cerrar = Transaccion.objects.filter(periodo__isnull=True)
             fecha_base = timezone.now().date()
 
-        # --- 2️⃣ VALIDACIÓN DE PARTIDA DOBLE DEL PERÍODO ---
-        # ... (Sin cambios) ...
+        # --- 2️⃣ VALIDACIÓN DE PARTIDA DOBLE ("El Guardia") ---
         VALOR_TIPO_DEBITO = 'Debe'
         VALOR_TIPO_HABER = 'Haber'
         saldos_periodo = transacciones_a_cerrar.aggregate(
@@ -517,12 +523,10 @@ def cerrar_periodo_view(request):
         total_haber_periodo = saldos_periodo['total_haber'] or Decimal('0.00')
         
         if abs(total_debe_periodo - total_haber_periodo) > Decimal('0.01'):
-            messages.error(request, f"❌ Error: Las transacciones del período no están cuadradas...")
-            periodos = Periodo.objects.all().order_by('-fecha_inicio')
-            return render(request, 'EstadosFinancieros.html', {'periodos': periodos})
-        
+            messages.error(request, f"❌ Error: Las transacciones del período no están cuadradas. Revise la vista 'transacciones'.")
+            return redirect('estados') 
+
         # --- 3️⃣ Guardar y cerrar período ---
-        # ... (Sin cambios) ...
         if periodo_abierto:
             ultimo_dia = monthrange(fecha_base.year, fecha_base.month)[1]
             periodo_abierto.fecha_fin = fecha_base.replace(day=ultimo_dia)
@@ -540,45 +544,73 @@ def cerrar_periodo_view(request):
             )
 
         
-        # --- 4️⃣ Cálculo de Ingresos y Gastos + Variación (v12) ---
-        # ... (Sin cambios, esta lógica es correcta) ...
+        # --- PASO 3.5: AUTOMATIZAR DEPRECIACIÓN (Lógica Correcta v22) ---
+        montos_depreciacion = {
+            '609': Decimal('200.00'),  # Gasto Comp.
+            '610': Decimal('38.33'),   # Gasto Oficina
+            '612': Decimal('58.33'),   # Gasto Mobiliario
+            '613': Decimal('14.58'),   # Gasto Seguridad
+        }
+        mapa_contrapartidas = {
+            '609': '1108', '610': '1110', '612': '1109', '613': '1111',
+        }
+
+        try:
+            for codigo_gasto, monto_mensual in montos_depreciacion.items():
+                cuenta_gasto = Cuenta.objects.get(codigo=codigo_gasto)
+                codigo_acumulada = mapa_contrapartidas[codigo_gasto]
+                cuenta_acumulada = Cuenta.objects.get(codigo=codigo_acumulada)
+
+                cuenta_gasto.debe = Coalesce(F('debe'), Decimal('0.00')) + monto_mensual
+                cuenta_acumulada.haber = Coalesce(F('haber'), Decimal('0.00')) + monto_mensual
+                cuenta_gasto.save(update_fields=['debe'])
+                cuenta_acumulada.save(update_fields=['haber'])
+                
+                Transaccion.objects.create(
+                    fecha=fecha_base, cuenta=cuenta_gasto, descripcion="Depreciación automática mensual",
+                    monto=monto_mensual, tipo='Debe', periodo=periodo_cerrado, exento_iva=True
+                )
+                Transaccion.objects.create(
+                    fecha=fecha_base, cuenta=cuenta_acumulada, descripcion="Depreciación automática mensual",
+                    monto=monto_mensual, tipo='Haber', periodo=periodo_cerrado, exento_iva=True
+                )
+            messages.info(request, "Depreciación mensual registrada automáticamente.")
+        except Cuenta.DoesNotExist as e:
+            messages.error(request, f"Error al depreciar: No se encontró una cuenta (ej: {e}). El cierre se detiene.")
+            transaction.set_rollback(True); return redirect('estados') 
+        except Exception as e:
+            messages.error(request, f"Error inesperado en depreciación: {e}")
+            transaction.set_rollback(True); return redirect('estados') 
+
+        # --- 4️⃣ Cálculo de Ingresos y Gastos + Variación ---
+        # (Se calcula el resultado DE ESTE MES)
         try:
             cuenta_variacion = Cuenta.objects.get(nombre__icontains="variación entre costo estimado y real")
         except Cuenta.DoesNotExist:
             cuenta_variacion = None
-
-        cuentas_ingreso = Cuenta.objects.filter(tipo='ING', automatica=False)
-        if cuenta_variacion:
-            cuentas_ingreso = cuentas_ingreso.exclude(id=cuenta_variacion.id)
-            
+        cuentas_ingreso = Cuenta.objects.filter(tipo='ING').exclude(id=cuenta_variacion.id if cuenta_variacion else None)
         total_ingresos = cuentas_ingreso.aggregate(
             total=Sum(Coalesce(F('haber'), Value(0), output_field=DecimalField(max_digits=15, decimal_places=2)))
         )['total'] or Decimal('0.00')
-        
-        cuentas_gasto = Cuenta.objects.filter(tipo='GAS', automatica=False)
-        if cuenta_variacion:
-            cuentas_gasto = cuentas_gasto.exclude(id=cuenta_variacion.id)
-
+        cuentas_gasto = Cuenta.objects.filter(tipo='GAS').exclude(id=cuenta_variacion.id if cuenta_variacion else None)
         total_gastos = cuentas_gasto.aggregate(
             total=Sum(Coalesce(F('debe'), Value(0), output_field=DecimalField(max_digits=15, decimal_places=2)))
         )['total'] or Decimal('0.00')
-
         if cuenta_variacion:
+            cuenta_variacion.refresh_from_db() # Carga el saldo de 'estimacion_ifpug'
             total_ingresos += cuenta_variacion.haber or 0
             total_gastos += cuenta_variacion.debe or 0
 
-        resultado_del_periodo = total_ingresos - total_gastos
-
+        resultado_del_periodo = total_ingresos - total_gastos # Resultado SOLO de este mes
 
         # --- 5️⃣ Obtener cuentas clave ---
-        # ... (Sin cambios) ...
         cuenta_pyg = Cuenta.objects.get(codigo='3103')
         cuenta_capital = Cuenta.objects.filter(codigo='3101').first()
         cuenta_reserva = Cuenta.objects.filter(codigo='3102').first()
 
         # --- 6️⃣ Guardar snapshot y Resetear cuentas (ING, GAS, VAR) ---
-        # ... (Sin cambios) ...
         for cuenta in Cuenta.objects.all():
+            cuenta.refresh_from_db() 
             saldo_debe = cuenta.debe or 0
             saldo_haber = cuenta.haber or 0
             if saldo_debe > saldo_haber: debe_final = saldo_debe - saldo_haber; haber_final = 0
@@ -590,29 +622,42 @@ def cerrar_periodo_view(request):
                 defaults={'debe': debe_final, 'haber': haber_final}
             )
             
+            # ¡AQUÍ SE RESETEA EL GASTO (GAS)!
             if cuenta.tipo in ['ING', 'GAS'] or (cuenta_variacion and cuenta == cuenta_variacion):
                 if (cuenta_variacion and cuenta == cuenta_variacion) or ("costo estimado" not in cuenta.nombre.lower()):
                     cuenta.debe = 0
                     cuenta.haber = 0
                     cuenta.save(update_fields=['debe', 'haber'])
 
-
-        # ----> INICIO DE LA MODIFICACIÓN (Sección 7) <----
-
-        # --- 7️⃣ Aplicar resultado a PyG (Lógica de Hoja de Trabajo) ---
-        # Para el "snapshot" del cierre, ponemos la ganancia en el Debe
-        # y la pérdida en el Haber, para balancear la hoja de trabajo.
         
-        if resultado_del_periodo > 0:  # utilidad (Ej: +100)
-            # Ganancia (Cr) → ahora se anota en el HABER
-            cuenta_pyg.haber = (cuenta_pyg.haber or 0) + resultado_del_periodo
-            cuenta_pyg.debe = 0
-        elif resultado_del_periodo < 0:  # pérdida (Ej: -100)
-            # Pérdida (Dr) → ahora se anota en el DEBE
-            cuenta_pyg.debe = (cuenta_pyg.debe or 0) + abs(resultado_del_periodo)
-            cuenta_pyg.haber = 0
+        # =================================================================
+        # --- PASO 7: APLICAR RESULTADO (Lógica NETEADA v24) ---
+        # =================================================================
+        
+        # 1. Obtenemos el saldo ARRASTRADO de PyG (ej: Debe=622.48, Haber=0)
+        saldo_debe_arrastrado = cuenta_pyg.debe or 0
+        saldo_haber_arrastrado = cuenta_pyg.haber or 0
+
+        # 2. Aplicamos el resultado DE ESTE MES (ej: Ganancia +1910.22)
+        if resultado_del_periodo < 0:  # Pérdida este mes
+            saldo_debe_arrastrado += abs(resultado_del_periodo)
+        elif resultado_del_periodo > 0:  # Ganancia este mes
+            saldo_haber_arrastrado += resultado_del_periodo
+        
+        # 3. Calculamos el saldo NETO FINAL
+        saldo_final_debe_pyg = Decimal('0.00')
+        saldo_final_haber_pyg = Decimal('0.00')
+        
+        if saldo_debe_arrastrado > saldo_haber_arrastrado:
+            # Pérdida neta final
+            saldo_final_debe_pyg = saldo_debe_arrastrado - saldo_haber_arrastrado
         else:
-            cuenta_pyg.debe = cuenta_pyg.haber = 0
+            # Ganancia neta final
+            saldo_final_haber_pyg = saldo_haber_arrastrado - saldo_debe_arrastrado
+            
+        # 4. Guardamos el saldo NETO FINAL en la cuenta y el snapshot
+        cuenta_pyg.debe = saldo_final_debe_pyg
+        cuenta_pyg.haber = saldo_final_haber_pyg
             
         BalanceComprobacion.objects.update_or_create(
             periodo=periodo_cerrado,
@@ -620,22 +665,17 @@ def cerrar_periodo_view(request):
             defaults={'debe': cuenta_pyg.debe, 'haber': cuenta_pyg.haber}
         )
         cuenta_pyg.save(update_fields=['debe', 'haber'])
+        
+        # =================================================================
+        # --- FIN PASO 7 ---
+        # =================================================================
 
-        # ----> FIN DE LA MODIFICACIÓN <----
-
-
-        # --- 8️⃣ (Eliminado) ---
-
-        # --- 9️⃣ Cerrar transacciones ---
-        # ... (Sin cambios) ...
+        # --- 9️⃣ Cerrar transacciones (humanas) ---
         transacciones_a_cerrar.update(periodo=periodo_cerrado)
 
-        # --- 1️⃣0️⃣ Crear nuevo período y "MEZCLAR" SALDOS ---
-        # ... (Sin cambios, la lógica v11 es robusta) ...
-        # (Esta sección LEE el 'resultado_del_periodo' (ej: +100)
-        # y lo distribuye correctamente en Capital/Reserva para la apertura,
-        # poniendo PyG en 0, ignorando si en el paso 7 lo pusimos en Debe o Haber)
-        
+        # =================================================================
+        # --- PASO 10: APERTURA (Lógica v24) ---
+        # =================================================================
         primer_dia_sig = (fecha_base.replace(day=1) + timezone.timedelta(days=32)).replace(day=1)
         ultimo_dia_sig = monthrange(primer_dia_sig.year, primer_dia_sig.month)[1]
         nuevo_periodo = Periodo.objects.create(
@@ -645,11 +685,17 @@ def cerrar_periodo_view(request):
             cerrado=False
         )
 
+        # 10.A: Calcular distribución basada en la GANANCIA NETA FINAL
+        # (utilidad_neta_final = saldo_final_haber_pyg - saldo_final_debe_pyg)
+        utilidad_neta_final = cuenta_pyg.haber - cuenta_pyg.debe 
+
         reserva_a_traspasar = Decimal('0.00')
         capital_a_traspasar = Decimal('0.00')
-        if resultado_del_periodo > 0 and cuenta_capital and cuenta_reserva:
-            reserva_a_traspasar = resultado_del_periodo * Decimal('0.20')
-            capital_a_traspasar = resultado_del_periodo * Decimal('0.80')
+        
+        # Solo distribuimos si la UTILIDAD NETA FINAL fue positiva
+        if utilidad_neta_final > 0 and cuenta_capital and cuenta_reserva:
+            reserva_a_traspasar = utilidad_neta_final * Decimal('0.20')
+            capital_a_traspasar = utilidad_neta_final * Decimal('0.80')
 
         ids_especiales = [cuenta_pyg.id]
         if cuenta_capital: ids_especiales.append(cuenta_capital.id)
@@ -658,14 +704,17 @@ def cerrar_periodo_view(request):
         cuentas_normales = Cuenta.objects.filter(tipo__in=['ACT', 'PAS', 'CAP']).exclude(id__in=ids_especiales)
 
         for cuenta in cuentas_normales:
+            cuenta.refresh_from_db() 
             BalanceComprobacion.objects.create(
                 periodo=nuevo_periodo,
                 cuenta=cuenta,
                 debe=cuenta.debe or 0,
-                haber=cuenta.haber or 0
+                haber=cuenta.haber or 0 
             )
 
+        # 10.B: Traspaso de Capital (sumando la ganancia neta)
         if cuenta_capital:
+            cuenta_capital.refresh_from_db()
             nuevo_haber_cap = (cuenta_capital.haber or 0) + capital_a_traspasar
             cuenta_capital.haber = nuevo_haber_cap
             cuenta_capital.debe = 0
@@ -677,7 +726,9 @@ def cerrar_periodo_view(request):
                 haber=nuevo_haber_cap
             )
 
+        # 10.C: Traspaso de Reserva (sumando la ganancia neta)
         if cuenta_reserva:
+            cuenta_reserva.refresh_from_db()
             nuevo_haber_res = (cuenta_reserva.haber or 0) + reserva_a_traspasar
             cuenta_reserva.haber = nuevo_haber_res
             cuenta_reserva.debe = 0
@@ -689,7 +740,9 @@ def cerrar_periodo_view(request):
                 haber=nuevo_haber_res
             )
 
-        if resultado_del_periodo > 0:
+        # 10.D: Traspaso de PyG
+        if utilidad_neta_final > 0: 
+            # Hubo GANANCIA NETA y se distribuyó. PyG empieza en CERO.
             cuenta_pyg.debe = 0
             cuenta_pyg.haber = 0
             cuenta_pyg.save(update_fields=['debe', 'haber'])
@@ -699,15 +752,17 @@ def cerrar_periodo_view(request):
                 debe=0,
                 haber=0
             )
-        else:
+        else: 
+            # Hubo PÉRDIDA NETA. El saldo (Debe) se arrastra.
+            cuenta_pyg.refresh_from_db() # Ya tiene el saldo neto (ej: Debe=622.48)
             BalanceComprobacion.objects.create(
                 periodo=nuevo_periodo,
                 cuenta=cuenta_pyg,
-                debe=cuenta_pyg.debe or 0,
-                haber=cuenta_pyg.haber or 0
+                debe=cuenta_pyg.debe, # Arrastra la pérdida neta
+                haber=cuenta_pyg.haber
             )
-
-        messages.success(request, f"✅ Cierre completado. Resultado del período: ${resultado_del_periodo:,.2f}")
+        
+        messages.success(request, f"✅ Cierre completado. Resultado del Mes: ${resultado_del_periodo:,.2f}. Utilidad Neta Final: ${utilidad_neta_final:,.2f}")
         return redirect(f"{reverse('comprobacion')}?periodo={periodo_cerrado.id}")
 
     else:
@@ -724,8 +779,8 @@ VENTAS_ROLES = [
     "Jefe de ventas", "Coordinador de marketing", "Vendedor", "Diseñador gráfico",
 ]
 PROD_ROLES = [
-    "Admin. de servidores/BD", "Desarrollador junior", "Desarrollador senior",
-    "Especialista en seguridad", "Líder técnico", "Tester QA",
+    "Desarrollador junior", "Desarrollador senior",
+    "Líder técnico", "Tester QA",
 ]
 
 def get_cuenta_por_cargo(cargo):
@@ -758,7 +813,6 @@ def calcular_componentes_costo(salario_nominal):
     AGUI = Decimal('0.041')
     ISSS = Decimal('0.075')
     ISSS_TOPE = Decimal('1000')
-    SEPT = Decimal('4.3333') # (s / 30) * 4.3333
     VAC_DIAS = Decimal('1.25') # (s / 30) * 1.25
     INCAF = Decimal('0.01')
     TREINTA = Decimal('30')
@@ -766,19 +820,17 @@ def calcular_componentes_costo(salario_nominal):
     # Cálculos de prestaciones
     afp  = s * AFP
     isss = min(s, ISSS_TOPE) * ISSS
-    sept = (s / TREINTA) * SEPT
     agui = s * AGUI
     vac  = (s / TREINTA) * VAC_DIAS
     incf = s * INCAF
 
     # Suma total (Costo Real)
-    costo_real = s + afp + isss + sept + agui + vac + incf
+    costo_real = s + afp + isss + agui + vac + incf
     
     return {
         'nominal': s,
         'afp': afp.quantize(Decimal('0.01')),
         'isss': isss.quantize(Decimal('0.01')),
-        'septimo': sept.quantize(Decimal('0.01')),
         'aguinaldo': agui.quantize(Decimal('0.01')),
         'vacaciones': vac.quantize(Decimal('0.01')),
         'incaf': incf.quantize(Decimal('0.01')),
@@ -847,9 +899,7 @@ def mod(request):
                     actualizar_haber(request, "INCAF por pagar", costos['incaf'])
                     actualizar_haber(request, "Aguinaldo por pagar", costos['aguinaldo'])
                     actualizar_haber(request, "Vacaciones por pagar", costos['vacaciones'])
-                    # (Asegúrate de tener "Septimo Dia por Pagar" si usas esta línea)
-                    actualizar_haber(request, "Septimo Dia por Pagar", costos['septimo']) 
-                    
+ 
             return redirect("mod")
 
         if action == "update":
@@ -867,7 +917,6 @@ def mod(request):
             actualizar_haber(request, "INCAF por pagar", -costos_antiguos['incaf'])
             actualizar_haber(request, "Aguinaldo por pagar", -costos_antiguos['aguinaldo'])
             actualizar_haber(request, "Vacaciones por pagar", -costos_antiguos['vacaciones'])
-            actualizar_haber(request, "Septimo Dia por Pagar", -costos_antiguos['septimo'])
             
             # --- 2. OBTENER NUEVOS VALORES ---
             nuevo_nombre = (request.POST.get("nombre") or "").strip()
@@ -891,7 +940,6 @@ def mod(request):
             actualizar_haber(request, "INCAF por pagar", costos_nuevos['incaf'])
             actualizar_haber(request, "Aguinaldo por pagar", costos_nuevos['aguinaldo'])
             actualizar_haber(request, "Vacaciones por pagar", costos_nuevos['vacaciones'])
-            actualizar_haber(request, "Septimo Dia por Pagar", costos_nuevos['septimo'])
                 
             return redirect("mod")
 
@@ -910,7 +958,6 @@ def mod(request):
             actualizar_haber(request, "INCAF por pagar", -costos['incaf'])
             actualizar_haber(request, "Aguinaldo por pagar", -costos['aguinaldo'])
             actualizar_haber(request, "Vacaciones por pagar", -costos['vacaciones'])
-            actualizar_haber(request, "Septimo Dia por Pagar", -costos['septimo'])
             
             # 2. Borrar el empleado
             obj.delete()
@@ -924,6 +971,7 @@ def mod(request):
     
 logger = logging.getLogger(__name__)
 
+@transaction.atomic # ¡Importante!
 def estimacion_ifpug(request):
     
     if request.method == 'POST':
@@ -942,36 +990,35 @@ def estimacion_ifpug(request):
 
             nuevo_costo = Decimal(costo_a_guardar)
 
-            # --- LÓGICA DE GUARDADO MODIFICADA ---
-            # Ya no buscamos un periodo.
-            # Actualizamos la cuenta "Costo estimado" directamente.
+            # ==========================================================
+            # --- LÓGICA DE "CONSTANTE" (TU IDEA) ---
+            # ==========================================================
             
             # 1. Buscamos la cuenta
-            cuenta_costo = Cuenta.objects.get(nombre="Costo estimado") 
-
-            # 2. Actualizamos sus campos 'debe' y 'haber'
-            cuenta_costo.debe = nuevo_costo
-            cuenta_costo.haber = Decimal('0.00')
+            cuenta_costo = Cuenta.objects.get(nombre="Costo estimado") # Gasto (Debe)
+ 
+            # 2. Actualizamos el campo 'saldo' (la "constante")
+            #    ¡NO TOCAMOS DEBE NI HABER! Así no se desbalancea NADA.
+            cuenta_costo.saldo = nuevo_costo
             
-            # 3. Guardamos solo esos campos en la tabla SIC_cuenta
-            cuenta_costo.save(update_fields=['debe', 'haber'])
+            # 3. Guardamos solo ese campo
+            cuenta_costo.save(update_fields=['saldo'])
             
             # --- FIN DE LA LÓGICA MODIFICADA ---
             
-            messages.success(request, f"¡Éxito! El 'debe' de la cuenta 'Costo estimado' se actualizó a ${nuevo_costo:,.2f}.")
+            messages.success(request, f"¡Éxito! El costo 'constante' de {cuenta_costo.nombre} se actualizó a ${nuevo_costo:,.2f}.")
 
         except Cuenta.DoesNotExist:
-            messages.error(request, "Error crítico: La cuenta 'Costo estimado' no existe.")
+            messages.error(request, "Error crítico: No se encontró 'Costo estimado' (601)")
         except Exception as e:
             messages.error(request, f"Error inesperado al guardar: {e}")
-            logger.error(f"Error en estimacion_ifpug POST: {e}")
+            # logger.error(f"Error en estimacion_ifpug POST: {e}")
         
         return redirect('estimacion')
 
     # --- 2) LÓGICA GET (Esta parte sigue igual) ---
     
     roles_mod = []
-
 
     try:
         with connection.cursor() as cur:
@@ -985,35 +1032,29 @@ def estimacion_ifpug(request):
                     "cargo": cargo,
                     "salario_real_mensual": float(salario or 0),
                 })
-                print("rol",cargo)
+        
         cargos_permitidos = {
-        "Tester QA",
-        "Desarrollador senior",
-        "Desarrollador junior",
-        "Líder técnico",
-    }
+            "Tester QA",
+            "Desarrollador senior",
+            "Desarrollador junior",
+            "Líder técnico",
+        }
 
         roles_filtrados = [r for r in roles_mod if r["cargo"] in cargos_permitidos]
-
-        # --- 3) Controlar la cantidad de Desarrolladores junior ---
-        desarrolladores_junior = [r for r in roles_filtrados if r["cargo"] == "Desarrollador junior"][:6]
-        otros_roles = [r for r in roles_filtrados if r["cargo"] != "Desarrollador junior"]
         
-        # Combinar los dos grupos
+        # ... (Tu lógica de filtrado de roles únicos) ...
         roles_unicos = []
         vistos = set()
         for r in roles_filtrados:
             if r["cargo"] not in vistos:
                 roles_unicos.append(r)
                 vistos.add(r["cargo"])
-    
-        # --- 3) Reemplazar roles_mod con la versión sin duplicados ---
         roles_mod = roles_unicos
-        print(roles_mod)
+        
         total_cif = Cif.objects.aggregate(s=Sum('monto'))['s'] or 0
         
     except Exception as e:
-        logger.error(f"Error en la lógica GET de estimacion_ifpug: {e}")
+        # logger.error(f"Error en la lógica GET de estimacion_ifpug: {e}")
         messages.error(request, f"Error al cargar datos iniciales (roles o CIF): {e}.")
         roles_mod = []
         total_cif = 0.0
@@ -1031,32 +1072,40 @@ def resultados(request):
     total_debe = Decimal('0.00')
     total_haber = Decimal('0.00')
     resultado = Decimal('0.00')
+
+    # --- LÓGICA DE SELECCIÓN DE PERÍODO (MEJORADA) ---
     periodo_id = request.GET.get('periodo')
-    
     if periodo_id:
         try:
-            periodo_seleccionado = Periodo.objects.get(id=periodo_id)
-            
-            # --- CONSULTA CORREGIDA ---
-            cuentas_resultado = BalanceComprobacion.objects.filter(
-                periodo=periodo_seleccionado,
-                cuenta__tipo__in=['ING', 'GAS'],
-                cuenta__automatica=False  # <-- ¡FILTRO AÑADIDO!
-            ).select_related('cuenta')
-            # --- FIN DE LA CORRECCIÓN ---
-            
-            if cuentas_resultado:
-                totales = cuentas_resultado.aggregate(
-                    total_debe_calc=Sum('debe'),
-                    total_haber_calc=Sum('haber')
-                )
-                total_debe = totales.get('total_debe_calc') or Decimal('0.00')
-                total_haber = totales.get('total_haber_calc') or Decimal('0.00')
-                resultado = total_haber - total_debe
-                
+            periodo_seleccionado = Periodo.objects.get(id=periodo_id, cerrado=True)
         except Periodo.DoesNotExist:
-            periodo_seleccionado = None 
+            pass # Se usará el default
+    
+    if not periodo_seleccionado and periodos.exists():
+        periodo_seleccionado = periodos.first() # Carga el más reciente por defecto
+    # --- FIN LÓGICA DE SELECCIÓN ---
+    
+    if periodo_seleccionado:
+        
+        # --- CONSULTA CORREGIDA (SIN FILTRO 'automatica') ---
+        cuentas_resultado = BalanceComprobacion.objects.filter(
+            periodo=periodo_seleccionado,
+            cuenta__tipo__in=['ING', 'GAS']
+            # ¡FILTRO ELIMINADO! Ahora mostrará las cuentas automáticas.
+        ).select_related('cuenta').order_by('cuenta__codigo')
+        # --- FIN DE LA CORRECCIÓN ---
+        
+        if cuentas_resultado:
+            totales = cuentas_resultado.aggregate(
+                total_debe_calc=Sum('debe'),
+                total_haber_calc=Sum('haber')
+            )
+            total_debe = totales.get('total_debe_calc') or Decimal('0.00')
+            total_haber = totales.get('total_haber_calc') or Decimal('0.00')
             
+            # Resultado (Ingresos - Gastos)
+            resultado = total_haber - total_debe
+                
     contexto = {
         'periodos': periodos,
         'periodo_seleccionado': periodo_seleccionado,
