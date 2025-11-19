@@ -15,7 +15,6 @@ def cargar_catalogo():
         ("1102", "Bancos", 0, 2300, 0, "11", False),
         ("1103", "Cuentas por cobrar", 0, 0, 0, "11", False),
         ("1104", "Deudores varios", 0, 0, 0, "11", False),
-        ("1105", "Inventario de suministros", 0, 0, 22700, "11", False),
         ("1106", "IVA crédito fiscal", 0, 0, 0, "11", True),
         ("1107", "Software en proceso", 0, 0, 0, "11", False),
         ("1108", "Depreciación acumulada de equipos de cómputo", 0, 0, 0, "11", True),
@@ -54,6 +53,7 @@ def cargar_catalogo():
         ("3101", "Capital social", 0, 0, 1840, "31", True),
         ("3102", "Reserva legal", 0, 0, 460, "31", True),
         ("3103", "Pérdidas y ganancias", 0, 0, 0, "31", True),
+        ("3104", "Inventario de suministros", 0, 0, 22700, "11", False),
 
         # --- CUENTAS DE RESULTADOS ---
         ("4", "Cuentas de resultados", 0, 0, 0, None, True),

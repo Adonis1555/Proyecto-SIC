@@ -14,7 +14,6 @@ def reiniciar_datos():
     BalanceComprobacion.objects.all().delete()
     Transaccion.objects.all().delete()
     Periodo.objects.all().delete()
-    ModEmpleado.objects.all().delete()
 
     # Reiniciar campos de las cuentas (sin borrarlas si querés mantener el catálogo)
     for c in Cuenta.objects.all():
