@@ -103,7 +103,7 @@ def transacciones(request):
             # ====================================================================
             
             # Si la transacción es una VENTA (Ingreso en Haber)...
-            if transaccion.cuenta.tipo == 'ING' and transaccion.tipo == 'Haber':
+            if transaccion.cuenta.codigo == '501' and transaccion.tipo == 'Haber':
                 try:
                     # 1. Obtenemos la "constante" guardada en la cuenta Costo Estimado
                     cuenta_costo = Cuenta.objects.get(nombre="Costo estimado")
@@ -135,7 +135,7 @@ def transacciones(request):
                         Transaccion.objects.create(
                             fecha=transaccion.fecha,
                             cuenta=cuenta_software,
-                            descripcion="Contrapartida Costo (Software en Proceso)",
+                            descripcion="Software en Proceso",
                             monto=costo_constante,
                             tipo='Haber',
                             periodo=periodo_abierto,

@@ -74,12 +74,13 @@
           <label for="cuenta">Cuenta</label>
             {{ form.cuenta }}
           -->
-          <label for="cuenta">Cuenta</label>
-          <select name="cuenta" class="form-select form-select-sm">
-            <option value="">Seleccione una cuenta</option>
-            {% for c in cuentas %}
-            <option value="{{ c.id }}">{{ c.codigo }} - {{ c.nombre }}</option>
-            {% endfor %}
+          <label for="{{ form.cuenta.id_for_label }}" class="form-label">Cuenta</label>
+  
+          {{ form.cuenta }} 
+          
+          {% if form.cuenta.errors %}
+              <div class="invalid-feedback d-block">{{ form.cuenta.errors }}</div>
+          {% endif %}
           </select>
           <div class="subgrid-monto">
             <div class="subgrid1">

@@ -1,6 +1,7 @@
 from django import forms
 from .models import Transaccion, Cuenta
 from datetime import date, timedelta
+from django.db.models import Count
 
 class TransaccionForm(forms.ModelForm):
     cuenta = forms.ModelChoiceField(
@@ -28,8 +29,20 @@ class TransaccionForm(forms.ModelForm):
         ultimo_dia = kwargs.pop('ultimo_dia', None)
         super().__init__(*args, **kwargs)
 
-        self.fields['cuenta'].queryset = Cuenta.objects.filter(automatica=False)
+        CODIGOS_RESERVADOS = ['2112', '1107', '1105','601','1205','604'] # Ejemplo de códigos reservados
 
+        # 2. Filtrar por automatica=False Y excluir los códigos reservados
+        self.fields['cuenta'].queryset = Cuenta.objects.filter(
+            automatica=False
+        ).exclude(
+            codigo__in=CODIGOS_RESERVADOS
+        ).annotate(
+            # 1. Anotar el número de hijos que tiene cada cuenta
+            num_hijos=Count('cuenta') 
+        ).filter(
+            # 2. Filtrar para mostrar solo aquellas que no tienen hijos
+            num_hijos=0 
+        ).order_by('codigo')
         hoy = date.today()
 
         # Caso: hay periodo abierto
