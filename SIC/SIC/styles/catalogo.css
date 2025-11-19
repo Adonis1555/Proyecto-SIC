@@ -2,8 +2,9 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
+  background-color: #f0f4f8;
+  font-family: "Poppins", sans-serif;
 }
-
 
 body {
   display: flex;
@@ -11,14 +12,40 @@ body {
   min-height: 100vh;
 }
 
+/* --- NAVBAR Y LOGO --- */
+.navbar {
+  padding: 0.5rem 1rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  background-color: #1a1d29 !important;
+}
+
+.logo-nav {
+  height: 40px !important;
+  max-height: 40px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  transition: transform 0.2s ease !important;
+  filter: brightness(1.1) !important;
+}
+
+.logo-nav:hover {
+  transform: scale(1.05) !important;
+}
+
+.navbar-brand {
+  padding: 0 !important;
+  margin-right: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
 main {
   flex: 1; 
-  padding: 50px;
+  padding: 80px 50px 100px 50px;
+  background: linear-gradient(135deg, #c5c9b6 0%, #dde691 100%);
 }
 
 footer {
-  bottom: 0;
-  left: 0;
   width: 100%;
   background: linear-gradient(90deg, #0f0f0f, #1c1c1c);
   color: #f1f1f1;
@@ -28,16 +55,136 @@ footer {
   font-family: "Poppins", sans-serif;
   font-size: 14px;
   letter-spacing: 1px;
-}
-footer p {
-  margin-top: 15px;
+  padding: 20px 0;
+  margin-top: auto;
 }
 
-.tabla-catalogo{
-    width: 50%;
-    margin: auto;
+footer p {
+  margin: 0;
 }
-.titulo-catalogo{
-    text-align: center;
-    padding:20px;
+
+.titulo-catalogo {
+  text-align: center;
+  padding: 20px;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1a1d29;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 10px;
+}
+
+.titulo-catalogo::after {
+  content: '';
+  display: block;
+  width: 120px;
+  height: 4px;
+  background: linear-gradient(90deg, #8f0ea8, #7dbdc0);
+  margin: 15px auto 0;
+  border-radius: 2px;
+}
+
+.tabla-catalogo {
+  width: 50%;
+  margin: auto;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  background-color: #ffffff !important;
+}
+
+.tabla-catalogo table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff !important;
+}
+
+.tabla-catalogo thead {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.tabla-catalogo th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border: none;
+}
+
+.tabla-catalogo td {
+  padding: 14px 16px;
+  background-color: #f3ecc7 !important;
+  border-bottom: 1px solid #e8f4f8;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.tabla-catalogo tbody tr:hover td {
+  background-color: #e8f8ff !important;
+  transition: background-color 0.2s ease;
+}
+
+.tabla-catalogo tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Estilos para códigos de cuenta */
+.tabla-catalogo td:first-child {
+  font-weight: 600;
+  color: #0066cc;
+}
+
+/* Filas especiales para categorías */
+.tabla-catalogo .categoria-principal td {
+  background-color: #d6f0ff;
+  font-weight: 700;
+  color: #004080;
+  border-top: 2px solid #4facfe;
+}
+
+/* Botones si existen */
+button,
+.btn {
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  main {
+    padding: 70px 20px 80px 20px;
+  }
+  
+  .titulo-catalogo {
+    font-size: 1.8rem;
+  }
+  
+  .tabla-catalogo {
+    width: 90%;
+  }
+  
+  .tabla-catalogo td,
+  .tabla-catalogo th {
+    padding: 10px 8px;
+    font-size: 0.85rem;
+  }
 }

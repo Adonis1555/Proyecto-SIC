@@ -2,6 +2,8 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
+  background-color: #f8f9fa !important;
+  font-family: "Poppins", sans-serif !important;
 }
 
 body {
@@ -9,38 +11,227 @@ body {
   flex-direction: column;
   min-height: 100vh;
 }
-main {
-  flex: 1; 
-  padding: 50px;
+
+/* --- NAVBAR Y LOGO --- */
+.navbar {
+  padding: 0.5rem 1rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  background-color: #1a1d29 !important;
 }
 
-footer {
-  bottom: 0;
-  left: 0;
+.logo-nav {
+  height: 40px !important;
+  max-height: 40px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  transition: transform 0.2s ease !important;
+  filter: brightness(1.1) !important;
+}
+
+.logo-nav:hover {
+  transform: scale(1.05) !important;
+}
+
+.navbar-brand {
+  padding: 0 !important;
+  margin-right: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* --- MAIN CONTAINER --- */
+main {
+  flex: 1; 
+  padding: 80px 20px 80px 20px; /* Aumenté el padding inferior */
+  background: linear-gradient(135deg, #384357 0%, #2a5298 100%) !important;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- CONTENEDOR CENTRAL --- */
+.content-wrapper {
+  background-color: #eee8e8 !important;
+  padding: 40px;
+  border-radius: 20px !important;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15) !important;
+  max-width: 1400px;
+  margin: 0 auto;
   width: 100%;
-  background: linear-gradient(90deg, #0f0f0f, #1c1c1c);
-  color: #f1f1f1;
+  margin-bottom: 30px; /* Espacio antes del footer */
+}
+
+/* --- TÍTULO --- */
+.titulo-balanceC {
+  text-align: center;
+  padding: 20px 0 30px 0;
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  color: #1a1d29 !important;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.titulo-balanceC::after {
+  content: '';
+  display: block;
+  width: 100px;
+  height: 4px;
+  background: linear-gradient(90deg, #2a5298, #1e3c72) !important;
+  margin: 15px auto 0;
+  border-radius: 2px;
+}
+
+/* --- SELECT CONTAINER --- */
+.select-container {
+  width: 60%;
+  max-width: 500px;
+  margin: 0 auto 40px auto;
+  padding: 0;
+}
+
+.select-container label {
+  display: block;
+  font-weight: 600 !important;
+  color: #4a5568 !important;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.select-container select,
+.select-container .form-select {
+  width: 100% !important;
+  padding: 12px 16px !important;
+  font-size: 1rem !important;
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  background-color: #f7fafc !important;
+  color: #2d3748 !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer;
+}
+
+.select-container select:focus,
+.select-container .form-select:focus {
+  border-color: #2a5298 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1) !important;
+  background-color: #ffffff !important;
+}
+
+.select-container select:hover,
+.select-container .form-select:hover {
+  border-color: #cbd5e0 !important;
+}
+
+/* --- TABLA BALANCE --- */
+.tabla-balanceC {
+  width: 100%;
+  margin: 30px auto 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
+}
+
+.tabla-balanceC table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff !important;
+}
+
+.tabla-balanceC thead {
+  background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%) !important;
+}
+
+.tabla-balanceC th {
+  padding: 16px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  font-size: 0.95rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none !important;
+}
+
+.tabla-balanceC td {
+  padding: 14px 16px !important;
+  background-color: #ece6e6 !important;
+  border-bottom: 1px solid #868788 !important;
+  color: #2d3748 !important;
+  font-size: 0.9rem;
+}
+
+.tabla-balanceC tbody tr:hover td {
+  background-color: #ced4ce !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.tabla-balanceC tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* Fila de totales */
+.tabla-balanceC .table-success td {
+  font-weight: 700 !important;
+  background-color: #76df7e !important;
+  color: #1b5e20 !important;
+  border-top: 2px solid #29a32d !important;
+  font-size: 1rem !important;
+}
+
+/* Alineación de números */
+.tabla-balanceC td:nth-child(3),
+.tabla-balanceC td:nth-child(4),
+.tabla-balanceC th:nth-child(3),
+.tabla-balanceC th:nth-child(4) {
+  text-align: right !important;
+}
+
+/* --- FOOTER --- */
+footer {
+  width: 100%;
+  background: linear-gradient(90deg, #0f172a, #1e293b) !important;
+  color: #e2e8f0 !important;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: "Poppins", sans-serif;
   font-size: 14px;
   letter-spacing: 1px;
-}
-footer p {
-  margin-top: 15px;
+  padding: 20px 0 !important;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.2) !important;
+  margin-top: auto; /* Empuja el footer al final */
 }
 
-.tabla-balanceC{
-    width: 50%;
-    margin: auto;
+footer p {
+  margin: 0 !important;
 }
-.titulo-balanceC{
-    text-align: center;
-    padding:20px;
-}
-.select-container{
-    width: 50%;
-    margin:auto;
-    padding:20px;
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  main {
+    padding: 70px 15px 40px 15px;
+  }
+
+  .select-container {
+    width: 90%;
+  }
+  
+  .titulo-balanceC {
+    font-size: 2rem !important;
+  }
+  
+  .content-wrapper {
+    padding: 25px 15px;
+    margin-bottom: 20px;
+  }
+  
+  .tabla-balanceC {
+    font-size: 0.85rem;
+  }
+
+  .tabla-balanceC td,
+  .tabla-balanceC th {
+    padding: 10px 8px !important;
+  }
 }

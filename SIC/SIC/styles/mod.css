@@ -1,0 +1,39 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #9bcf58 !important;
+  font-family: "Poppins", sans-serif;
+}
+
+body {
+  background-color: var(--bg-color);
+  /* o directamente: background: linear-gradient(135deg, #8e9eab 0%, #c4cdd5 100%); */
+}
+
+/* --- NAVBAR Y LOGO --- */
+.navbar {
+  padding: 0.5rem 1rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  background-color: #1a1d29 !important;
+}
+
+.logo-nav {
+  height: 40px !important;
+  max-height: 40px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  transition: transform 0.2s ease !important;
+  filter: brightness(1.1) !important;
+}
+
+.logo-nav:hover {
+  transform: scale(1.05) !important;
+}
+
+.navbar-brand {
+  padding: 0 !important;
+  margin-right: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+}

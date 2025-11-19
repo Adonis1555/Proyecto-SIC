@@ -2,8 +2,9 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
+  background-color: #d3d3d4 !important;
+  font-family: "Poppins", sans-serif;
 }
-
 
 body {
   display: flex;
@@ -11,42 +12,209 @@ body {
   min-height: 100vh;
 }
 
-main {
-  flex: 1; 
-  padding: 50px;
+/* --- NAVBAR Y LOGO --- */
+.navbar {
+  padding: 0.5rem 1rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  background-color: #1a1d29 !important;
 }
 
+.logo-nav {
+  height: 40px !important;
+  max-height: 40px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  transition: transform 0.2s ease !important;
+  filter: brightness(1.1) !important;
+}
+
+.logo-nav:hover {
+  transform: scale(1.05) !important;
+}
+
+.navbar-brand {
+  padding: 0 !important;
+  margin-right: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* --- MAIN CONTAINER --- */
+main {
+  flex: 1; 
+  padding: 80px 20px 50px 20px;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- CONTENEDOR CENTRAL --- */
+.container {
+  background-color: #d6d6d6 !important;
+  padding: 50px 40px;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12) !important;
+  max-width: 900px;
+  width: 100%;
+  border: 1px solid #e8eaf0 !important;
+}
+
+/* --- TÍTULO --- */
+.titulo-estados {
+  text-align: center;
+  padding: 20px 0 30px 0;
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  color: #1a1d29 !important;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.titulo-estados::after {
+  content: '';
+  display: block;
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, #2a5298, #1e3c72) !important;
+  margin: 15px auto 0;
+  border-radius: 2px;
+}
+
+/* --- CONTENEDOR DE BOTONES --- */
+.button-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+  justify-items: center;
+  margin-top: 40px;
+  padding: 0 20px;
+}
+
+/* --- BOTONES PROFESIONALES --- */
+button, .btn {
+  width: 100% !important;
+  max-width: 350px;
+  height: 110px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  border: 2px solid transparent !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+}
+
+/* Efecto de brillo sutil */
+button::before, .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transition: left 0.6s ease;
+}
+
+button:hover, .btn:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+button:hover::before, .btn:hover::before {
+  left: 100%;
+}
+
+button:active, .btn:active {
+  transform: translateY(-2px) !important;
+}
+
+/* --- COLORES PROFESIONALES PARA CADA BOTÓN --- */
+
+/* Balance de Comprobación - Azul Corporativo */
+button:nth-child(1), .btn:nth-child(1) {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+}
+
+button:nth-child(1):hover, .btn:nth-child(1):hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%) !important;
+}
+
+/* Estado de Resultados - Verde Profesional */
+button:nth-child(2), .btn:nth-child(2) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+
+button:nth-child(2):hover, .btn:nth-child(2):hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+}
+
+/* Estado de Capital - Naranja Corporativo */
+button:nth-child(3), .btn:nth-child(3) {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
+}
+
+button:nth-child(3):hover, .btn:nth-child(3):hover {
+  background: linear-gradient(135deg, #dc6f26 0%, #b91c1c 100%) !important;
+}
+
+/* Balance General - Gris Elegante */
+button:nth-child(4), .btn:nth-child(4) {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%) !important;
+}
+
+button:nth-child(4):hover, .btn:nth-child(4):hover {
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%) !important;
+}
+
+/* --- FOOTER --- */
 footer {
   bottom: 0;
   left: 0;
   width: 100%;
-  background: linear-gradient(90deg, #0f0f0f, #1c1c1c);
-  color: #f1f1f1;
+  background: linear-gradient(90deg, #0f172a, #1e293b) !important;
+  color: #e2e8f0 !important;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: "Poppins", sans-serif;
   font-size: 14px;
   letter-spacing: 1px;
+  padding: 20px 0 !important;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.2) !important;
 }
+
 footer p {
-  margin-top: 15px;
+  margin: 0 !important;
 }
 
-.titulo-estados{
-    text-align: center;
-    padding:20px;
-}
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  main {
+    padding: 70px 15px 40px 15px;
+  }
 
-.button-container{
-    display: grid;
-    grid-template-columns: repeat(2,1fr);
-    gap:30px;
-    justify-items: center;
-    margin-top: 40px;
-}
-
-button{
-    width: 70%;
-    height: 100px;
+  .button-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .titulo-estados {
+    font-size: 2rem !important;
+  }
+  
+  button, .btn {
+    height: 100px !important;
+    font-size: 0.95rem !important;
+  }
+  
+  .container {
+    padding: 35px 25px;
+  }
 }
